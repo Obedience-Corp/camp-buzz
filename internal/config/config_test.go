@@ -9,8 +9,8 @@ import (
 func TestWriteAndResolve(t *testing.T) {
 	root := t.TempDir()
 	path, err := Write(root, Config{
-		RelayURL:  "ws://localhost:3000",
-		ChannelID: "chan-1",
+		RelayURL:   "ws://localhost:3000",
+		ChannelID:  "chan-1",
 		FestivalID: "CI0009",
 	})
 	if err != nil {

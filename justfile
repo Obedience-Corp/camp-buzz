@@ -8,33 +8,45 @@ bin_dir := "bin"
 main_path := "./cmd/camp-buzz"
 gobin := env_var_or_default("GOBIN", `go env GOPATH` + "/bin")
 
+[doc('Cross-platform builds')]
+mod xbuild '.justfiles/build.just'
+
+[doc('Testing')]
+mod test '.justfiles/test.just'
+
+[doc('Release and versioning')]
+mod release '.justfiles/release.just'
+
 [private]
 default:
     @echo "camp-buzz — camp plugin (Buzz status projection)"
     @echo ""
     @just --list --unsorted
 
+[no-cd]
 build:
     @mkdir -p {{bin_dir}}
     go build -o {{bin_dir}}/{{binary_name}} {{main_path}}
 
+[no-cd]
 fmt:
     go fmt ./...
 
+[no-cd]
 vet:
     go vet ./...
 
+[no-cd]
 lint: fmt vet
     @echo "Lint complete"
 
-test:
-    go test ./...
-
+[no-cd]
 tidy:
     go mod tidy
 
+[no-cd]
 clean:
-    rm -rf {{bin_dir}} dist out
+    rm -rf {{bin_dir}} dist out completions
 
 install: build
     #!/usr/bin/env bash

@@ -25,7 +25,17 @@ camp buzz …
 Posts shell out to the external **`buzz` CLI**. Festival remains source of
 truth; Buzz is a projection surface.
 
-## Install (from source)
+## Install
+
+### Festival installer (preferred)
+
+Once a stable release exists and the official marketplace lists this plugin:
+
+```bash
+festival install camp-buzz
+```
+
+### From source
 
 ```bash
 just install
@@ -33,11 +43,27 @@ just install
 go install github.com/Obedience-Corp/camp-buzz/cmd/camp-buzz@latest
 ```
 
-Optional assets:
+### Assets
 
 ```bash
 just install-assets   # → ~/.obey/plugins/camp-buzz/
 ```
+
+### Release cut (maintainers)
+
+```bash
+just release check      # validate goreleaser config
+just release snapshot   # local snapshot build
+just release stable     # tag next patch and push (triggers GH release)
+# or: just release tag v0.1.0
+```
+
+Marketplace registration lives in
+[`Obedience-Corp/marketplace`](https://github.com/Obedience-Corp/marketplace)
+(`obedience-corp/camp-buzz` + `release_source` pointing at this repo's GitHub
+Releases). Asset names must match:
+
+`camp-buzz-{version}-{os}-{arch}.tar.gz` with `os` ∈ {macOS,linux}, `arch` ∈ {x86_64,arm64}.
 
 ## Configure
 

@@ -1,0 +1,81 @@
+version: 2
+
+before:
+  hooks:
+    - bash scripts/completions.sh
+
+builds:
+  - id: camp-buzz-build
+    main: ./cmd/camp-buzz
+    binary: camp-buzz
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X github.com/Obedience-Corp/camp-buzz/internal/version.Version={{.Version}}
+      - -X github.com/Obedience-Corp/camp-buzz/internal/version.Commit={{.Commit}}
+      - -X github.com/Obedience-Corp/camp-buzz/internal/version.BuildDate={{.Date}}
+
+archives:
+  - id: camp-buzz
+    ids:
+      - camp-buzz-build
+    name_template: >-
+      camp-buzz-
+      {{- .Version }}-
+      {{- if eq .Os "darwin" }}macOS
+      {{- else }}{{ .Os }}{{ end }}-
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else }}{{ .Arch }}{{ end }}
+    files:
+      - README.md
+      - LICENSE
+      - NOTICE
+      - completions/*
+      - assets/**/*
+
+checksum:
+  name_template: checksums.txt
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+
+release:
+  github:
+    owner: Obedience-Corp
+    name: camp-buzz
+
+  prerelease: auto
+
+  header: |
+    ## camp-buzz {{ .Tag }}
+
+    Optional Buzz integration plugin for `camp` (`camp buzz …`).
+
+  footer: |
+    {{- if .PreviousTag }}
+    **Full Changelog**: https://github.com/Obedience-Corp/camp-buzz/compare/{{ .PreviousTag }}...{{ .Tag }}
+    {{- end }}
+
+    ## Installation
+
+    | Method | Command |
+    |--------|---------|
+    | Festival installer | `festival install camp-buzz` |
+    | From source | `go install github.com/Obedience-Corp/camp-buzz/cmd/camp-buzz@latest` |
+    | Manual | Download the matching archive from GitHub Releases |
+
+    After install, camp discovers the binary as `camp buzz`.

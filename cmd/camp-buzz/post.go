@@ -13,15 +13,15 @@ import (
 
 func newPostCmd() *cobra.Command {
 	var (
-		message      string
-		festival     string
-		task         string
-		pathFlag     string
-		gate         string
-		channel      string
-		relay        string
-		fromHook     bool
-		noFooter     bool
+		message  string
+		festival string
+		task     string
+		pathFlag string
+		gate     string
+		channel  string
+		relay    string
+		fromHook bool
+		noFooter bool
 	)
 
 	cmd := &cobra.Command{
