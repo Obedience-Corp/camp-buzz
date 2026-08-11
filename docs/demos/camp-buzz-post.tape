@@ -21,7 +21,7 @@ Type "export CAMP_BUZZ_VHS_ROOT=/tmp/camp-buzz-vhs-post" Enter
 Type "rm -rf $CAMP_BUZZ_VHS_ROOT" Enter
 Type "FIX=$(bash scripts/vhs-fixture.sh)" Enter
 Type "source $FIX/env.sh" Enter
-Type "camp-buzz bind --channel 22222222-2222-4222-8222-222222222222 --relay ws://127.0.0.1:3000 --festival CI0009 >/dev/null" Enter
+Type "camp-buzz bind --channel 22222222-2222-4222-8222-222222222222 --relay http://127.0.0.1:3000 --festival CI0009 >/dev/null" Enter
 Type "clear" Enter
 Show
 
