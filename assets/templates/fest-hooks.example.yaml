@@ -2,6 +2,9 @@
 # Enable only when camp-buzz and buzz CLI are installed and doctor is clean.
 # Fail-open: keep timeouts short; do not block fest on post failures.
 #
+# Requires: BUZZ_PRIVATE_KEY, buzz on PATH, and camp buzz bind
+# (relay_url as http://… base URL, e.g. http://localhost:3000).
+#
 # Map definition names to real fest lifecycle events for your fest version
 # (see: fest hooks list).
 

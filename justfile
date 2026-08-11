@@ -113,7 +113,7 @@ smoke:
     # shellcheck disable=SC1091
     source "$root/env.sh"
     camp-buzz version | grep -q camp-buzz
-    camp-buzz bind --channel 33333333-3333-4333-8333-333333333333 --relay ws://localhost:3000 --festival SMOKE1
+    camp-buzz bind --channel 33333333-3333-4333-8333-333333333333 --relay http://localhost:3000 --festival SMOKE1
     camp-buzz doctor
     camp-buzz show | grep -q SMOKE1
     camp-buzz post -m "smoke status" --task FEST-smoke --gate pass | grep -q posted
@@ -121,3 +121,40 @@ smoke:
     grep -q "festival: SMOKE1" "$BUZZ_FAKE_LOG"
     camp-buzz hook-install | grep -q buzz_status
     echo "SMOKE OK ($root)"
+
+# Real buzz CLI + live local relay (requires: built buzz binary, relay on :3000).
+# Example:
+#   export BUZZ_BIN=/path/to/buzz BUZZ_PRIVATE_KEY=… 
+#   just smoke-real
+[no-cd]
+smoke-real:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{justfile_directory()}}"
+    : "${BUZZ_BIN:?set BUZZ_BIN to the real buzz binary}"
+    : "${BUZZ_PRIVATE_KEY:?set BUZZ_PRIVATE_KEY}"
+    export BUZZ_RELAY_URL="${BUZZ_RELAY_URL:-http://localhost:3000}"
+    if ! curl -sS -m 2 "$BUZZ_RELAY_URL/" >/dev/null; then
+      echo "relay not reachable at $BUZZ_RELAY_URL (start: just relay in buzz tree)" >&2
+      exit 1
+    fi
+    root=/tmp/camp-buzz-smoke-real-$$
+    rm -rf "$root"
+    mkdir -p "$root/bin" "$root/campaign/.campaign" "$root/home"
+    go build -o "$root/bin/camp-buzz" ./cmd/camp-buzz
+    cp "$BUZZ_BIN" "$root/bin/buzz"
+    chmod +x "$root/bin/buzz"
+    export PATH="$root/bin:$PATH"
+    export CAMP_ROOT="$root/campaign"
+    export HOME="$root/home"
+    # create a disposable channel on the real relay
+    ch_json=$(buzz channels create --name "camp-buzz-smoke-$$" --type stream --visibility open)
+    channel=$(echo "$ch_json" | python3 -c 'import sys,json; print(json.load(sys.stdin)["channel_id"])')
+    camp-buzz bind --channel "$channel" --relay "$BUZZ_RELAY_URL" --festival REALSMOKE
+    camp-buzz doctor
+    camp-buzz post -m "real buzz e2e from camp-buzz" --task FEST-real --gate pass
+    # confirm message is on the relay
+    got=$(buzz messages get --channel "$channel" --limit 3)
+    echo "$got" | grep -q "real buzz e2e from camp-buzz"
+    echo "$got" | grep -q "festival: REALSMOKE"
+    echo "SMOKE-REAL OK channel=$channel"

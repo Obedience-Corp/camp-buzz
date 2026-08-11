@@ -41,6 +41,7 @@ func LoadFile(campaignRoot string) (Config, string, error) {
 }
 
 // Resolve loads bind file (if present) then overlays env (env wins).
+// Relay URLs are normalized for the buzz CLI (HTTP base URL, not WebSocket).
 func Resolve(campaignRoot string) (Config, string, error) {
 	cfg, path, err := LoadFile(campaignRoot)
 	if err != nil {
@@ -52,7 +53,23 @@ func Resolve(campaignRoot string) (Config, string, error) {
 	if v := os.Getenv("BUZZ_CHANNEL"); v != "" {
 		cfg.ChannelID = v
 	}
+	cfg.RelayURL = NormalizeRelayURL(cfg.RelayURL)
 	return cfg, path, nil
+}
+
+// NormalizeRelayURL converts ws:// / wss:// to http:// / https:// for buzz CLI.
+// The real buzz CLI documents BUZZ_RELAY_URL as an HTTP base (default
+// http://localhost:3000). WebSocket forms are accepted by some builds after
+// normalization, but HTTP is the supported contract.
+func NormalizeRelayURL(u string) string {
+	switch {
+	case len(u) >= 6 && u[:6] == "wss://":
+		return "https://" + u[6:]
+	case len(u) >= 5 && u[:5] == "ws://":
+		return "http://" + u[5:]
+	default:
+		return u
+	}
 }
 
 // Write upserts the bind file under campaignRoot.

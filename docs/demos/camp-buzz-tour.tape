@@ -31,7 +31,7 @@ Sleep 1600ms
 Type "clear" Enter
 Sleep 300ms
 
-Type "camp-buzz bind --channel 11111111-1111-4111-8111-111111111111 --relay ws://localhost:3000 --festival DEMO0001" Enter
+Type "camp-buzz bind --channel 11111111-1111-4111-8111-111111111111 --relay http://localhost:3000 --festival DEMO0001" Enter
 Sleep 900ms
 Type "clear" Enter
 Sleep 300ms

@@ -68,7 +68,7 @@ func newDoctorCmd() *cobra.Command {
 					fmt.Fprintln(out, "bind file: n/a (no campaign root)")
 				}
 				if cfg.RelayURL == "" {
-					fmt.Fprintln(out, "relay_url: NOT set (BUZZ_RELAY_URL or bind file)")
+					fmt.Fprintln(out, "relay_url: NOT set (BUZZ_RELAY_URL or bind file; use http://…)")
 					ok = false
 				} else {
 					fmt.Fprintf(out, "relay_url: %s\n", cfg.RelayURL)

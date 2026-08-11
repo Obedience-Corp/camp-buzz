@@ -86,11 +86,30 @@ Releases). Asset names must match:
 ## Configure
 
 ```bash
-export BUZZ_PRIVATE_KEY=…     # secret — never commit
-export BUZZ_RELAY_URL=ws://localhost:3000   # or bind file
-camp buzz bind --channel <uuid> --relay ws://localhost:3000 --festival CI0009
+export BUZZ_PRIVATE_KEY=…                 # secret — never commit
+export BUZZ_RELAY_URL=http://localhost:3000  # HTTP base URL (not ws://)
+camp buzz bind --channel <uuid> --relay http://localhost:3000 --festival CI0009
 camp buzz doctor
 ```
+
+`ws://` / `wss://` values are normalized to `http://` / `https://` for the
+real `buzz` CLI, which documents an **HTTP** relay base URL.
+
+## Testing against real Buzz
+
+Fake-CLI demos (`just smoke`, `just vhs`) prove the plugin surface without a
+relay. For the real stack:
+
+```bash
+# in the Buzz monorepo: just setup && just relay
+export BUZZ_BIN=/path/to/buzz          # e.g. buzz/target/release/buzz
+export BUZZ_PRIVATE_KEY=…              # from: buzz-admin generate-key
+export BUZZ_RELAY_URL=http://localhost:3000
+just smoke-real
+```
+
+This creates a disposable channel, posts via `camp-buzz post`, and reads the
+message back with `buzz messages get`.
 
 ## Fest hooks (optional)
 

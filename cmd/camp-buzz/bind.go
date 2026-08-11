@@ -48,7 +48,7 @@ func newBindCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&relay, "relay", "", "Buzz relay URL (e.g. ws://localhost:3000)")
+	cmd.Flags().StringVar(&relay, "relay", "", "Buzz relay HTTP base URL (e.g. http://localhost:3000)")
 	cmd.Flags().StringVar(&channel, "channel", "", "Buzz channel UUID")
 	cmd.Flags().StringVar(&festivalID, "festival", "", "Default festival id for footers")
 	cmd.Flags().StringVar(&festivalPath, "festival-path", "", "Optional festival path relative to campaign")
