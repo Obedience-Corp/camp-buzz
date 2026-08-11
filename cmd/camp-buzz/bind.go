@@ -19,17 +19,11 @@ func newBindCmd() *cobra.Command {
 			if root == "" {
 				return fmt.Errorf("not inside a campaign (no .campaign / CAMP_ROOT)")
 			}
-			// merge with existing
-			cfg, _, err := config.Resolve(root)
+			// Merge with existing file only (do not bake env into the file).
+			cfg, _, err := config.LoadFile(root)
 			if err != nil {
 				return err
 			}
-			// clear env overlays for merge base — re-read file only
-			cfg, _, _ = config.Resolve("") // empty
-			// load file without env by reading again simply:
-			existing, _, _ := config.Resolve(root)
-			cfg = existing
-			// strip env influence: re-read from Write path using only flags when set
 			if relay != "" {
 				cfg.RelayURL = relay
 			}
@@ -42,8 +36,8 @@ func newBindCmd() *cobra.Command {
 			if festivalPath != "" {
 				cfg.FestivalPath = festivalPath
 			}
-			if cfg.ChannelID == "" && channel == "" {
-				return fmt.Errorf("--channel is required when binding a new channel")
+			if cfg.ChannelID == "" {
+				return fmt.Errorf("--channel is required when no channel_id is already bound")
 			}
 			path, err := config.Write(root, cfg)
 			if err != nil {

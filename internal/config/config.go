@@ -20,20 +20,31 @@ type Config struct {
 	FestivalPath string `yaml:"festival_path,omitempty"`
 }
 
+// LoadFile reads the bind file only (no env overlay). Missing file returns empty Config.
+func LoadFile(campaignRoot string) (Config, string, error) {
+	var cfg Config
+	if campaignRoot == "" {
+		return cfg, "", nil
+	}
+	path := filepath.Join(campaignRoot, FileName)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return cfg, path, nil
+		}
+		return Config{}, path, fmt.Errorf("read %s: %w", path, err)
+	}
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return Config{}, path, fmt.Errorf("parse %s: %w", path, err)
+	}
+	return cfg, path, nil
+}
+
 // Resolve loads bind file (if present) then overlays env (env wins).
 func Resolve(campaignRoot string) (Config, string, error) {
-	var cfg Config
-	path := ""
-	if campaignRoot != "" {
-		path = filepath.Join(campaignRoot, FileName)
-		data, err := os.ReadFile(path)
-		if err == nil {
-			if err := yaml.Unmarshal(data, &cfg); err != nil {
-				return Config{}, path, fmt.Errorf("parse %s: %w", path, err)
-			}
-		} else if !os.IsNotExist(err) {
-			return Config{}, path, fmt.Errorf("read %s: %w", path, err)
-		}
+	cfg, path, err := LoadFile(campaignRoot)
+	if err != nil {
+		return Config{}, path, err
 	}
 	if v := os.Getenv("BUZZ_RELAY_URL"); v != "" {
 		cfg.RelayURL = v
