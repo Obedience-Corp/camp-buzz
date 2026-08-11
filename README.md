@@ -25,6 +25,24 @@ camp buzz …
 Posts shell out to the external **`buzz` CLI**. Festival remains source of
 truth; Buzz is a projection surface.
 
+## Demo
+
+Recorded against an isolated fixture with a **fake `buzz` CLI** (no live relay
+required). Re-record with `just vhs` (needs `vhs`, `ttyd`, `ffmpeg`).
+
+### Plugin tour
+
+`doctor` → `bind` → `show` → ready `doctor` → `post` → `hook-install` →
+`camp buzz version`
+
+![camp-buzz tour](docs/demos/camp-buzz-tour.gif)
+
+### Status post + footer
+
+`post` then the mock buzz log showing the Festival footer contract:
+
+![camp-buzz post](docs/demos/camp-buzz-post.gif)
+
 ## Install
 
 ### Festival installer (preferred)
@@ -87,9 +105,14 @@ Hooks must **fail open** — do not block fest advance on post failures.
 
 ```bash
 just build
-just test
+just test          # unit + integration (fake buzz fixture)
+just smoke         # full CLI smoke with fixture
 just run doctor
+just vhs           # regenerate docs/demos/*.gif
 ```
+
+Smoke and VHS use `scripts/vhs-fixture.sh` + `scripts/fake-buzz` so `post`
+is tested without a real Buzz deployment.
 
 ## License
 

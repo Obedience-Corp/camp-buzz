@@ -73,3 +73,51 @@ install-assets:
     mkdir -p "$dest"
     cp -R assets/. "$dest/"
     echo "Installed assets to $dest"
+
+# ── VHS demos (requires vhs, ttyd, ffmpeg) ──────────────────────────
+
+[no-cd]
+vhs-fixture:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    export CAMP_BUZZ_VHS_ROOT="${CAMP_BUZZ_VHS_ROOT:-/tmp/camp-buzz-vhs}"
+    bash scripts/vhs-fixture.sh
+
+[no-cd]
+vhs-tour: build
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{justfile_directory()}}"
+    mkdir -p docs/demos
+    vhs docs/demos/camp-buzz-tour.tape
+
+[no-cd]
+vhs-post: build
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{justfile_directory()}}"
+    mkdir -p docs/demos
+    vhs docs/demos/camp-buzz-post.tape
+
+[no-cd]
+vhs: vhs-tour vhs-post
+    @echo "Wrote docs/demos/camp-buzz-tour.gif and docs/demos/camp-buzz-post.gif"
+
+[no-cd]
+smoke:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{justfile_directory()}}"
+    export CAMP_BUZZ_VHS_ROOT=/tmp/camp-buzz-smoke-$$
+    root=$(bash scripts/vhs-fixture.sh)
+    # shellcheck disable=SC1091
+    source "$root/env.sh"
+    camp-buzz version | grep -q camp-buzz
+    camp-buzz bind --channel 33333333-3333-4333-8333-333333333333 --relay ws://localhost:3000 --festival SMOKE1
+    camp-buzz doctor
+    camp-buzz show | grep -q SMOKE1
+    camp-buzz post -m "smoke status" --task FEST-smoke --gate pass | grep -q posted
+    grep -q "smoke status" "$BUZZ_FAKE_LOG"
+    grep -q "festival: SMOKE1" "$BUZZ_FAKE_LOG"
+    camp-buzz hook-install | grep -q buzz_status
+    echo "SMOKE OK ($root)"

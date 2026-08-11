@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# Deterministic mock of the buzz CLI for camp-buzz demos and tests.
+# Records invocations under BUZZ_FAKE_LOG (or /tmp/camp-buzz-fake-buzz.log).
+set -euo pipefail
+
+log="${BUZZ_FAKE_LOG:-/tmp/camp-buzz-fake-buzz.log}"
+mkdir -p "$(dirname "$log")"
+
+{
+  printf 'args:'
+  printf ' %q' "$@"
+  printf '\n'
+  if [[ "${1:-}" == "messages" && "${2:-}" == "send" ]]; then
+    printf 'stdin:\n'
+    cat
+    printf '\n---\n'
+  fi
+} >>"$log"
+
+case "${1:-}" in
+  messages)
+    case "${2:-}" in
+      send)
+        # Validate required flags the real CLI would need
+        channel=""
+        content_dash=0
+        i=3
+        while [[ $i -le $# ]]; do
+          eval "arg=\${$i}"
+          case "$arg" in
+            --channel)
+              i=$((i + 1))
+              eval "channel=\${$i}"
+              ;;
+            --content)
+              i=$((i + 1))
+              eval "c=\${$i}"
+              [[ "$c" == "-" ]] && content_dash=1
+              ;;
+          esac
+          i=$((i + 1))
+        done
+        if [[ -z "$channel" ]]; then
+          echo '{"error":"channel required"}' >&2
+          exit 1
+        fi
+        if [[ -z "${BUZZ_PRIVATE_KEY:-}" ]]; then
+          echo '{"error":"auth required"}' >&2
+          exit 3
+        fi
+        # Echo success JSON like a real agent-first CLI might
+        echo "{\"ok\":true,\"channel\":\"$channel\",\"relay\":\"${BUZZ_RELAY_URL:-}\"}"
+        exit 0
+        ;;
+      *)
+        echo "fake-buzz: unsupported messages subcommand: ${2:-}" >&2
+        exit 1
+        ;;
+    esac
+    ;;
+  version)
+    echo "buzz (fake) 0.0.0-demo"
+    exit 0
+    ;;
+  *)
+    echo "fake-buzz: unsupported: $*" >&2
+    exit 1
+    ;;
+esac
