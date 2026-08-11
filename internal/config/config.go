@@ -77,6 +77,7 @@ func Write(campaignRoot string, cfg Config) (string, error) {
 	if campaignRoot == "" {
 		return "", fmt.Errorf("campaign root required")
 	}
+	cfg.RelayURL = NormalizeRelayURL(cfg.RelayURL)
 	path := filepath.Join(campaignRoot, FileName)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return "", fmt.Errorf("create integrations dir: %w", err)

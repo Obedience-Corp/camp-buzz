@@ -42,7 +42,7 @@ Used by humans, fest hooks (--from-hook), and agents.`,
 				cfg.ChannelID = channel
 			}
 			if relay != "" {
-				cfg.RelayURL = relay
+				cfg.RelayURL = config.NormalizeRelayURL(relay)
 			}
 			if festival != "" {
 				cfg.FestivalID = festival
