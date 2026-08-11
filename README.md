@@ -67,4 +67,4 @@ just run doctor
 
 ## License
 
-Private Obedience Corp repository. Not an open-source release surface yet.
+Apache License 2.0. See [LICENSE](./LICENSE).
