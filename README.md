@@ -27,17 +27,62 @@ truth; Buzz is a projection surface.
 
 ## Demo
 
-Recorded against an isolated fixture with a **fake `buzz` CLI** (no live relay
-required). Re-record with `just vhs` (needs `vhs`, `ttyd`, `ffmpeg`).
+Two proof levels:
 
-### Plugin tour
+1. **Buzz Desktop UI** — Playwright records a real browser video of a
+   `camp-buzz post` appearing in the channel timeline (live local relay).
+2. **Real CLI** — full-color VHS of `camp-buzz` posting through the real
+   `buzz` binary and reading the message back from the relay.
+3. **Fixture GIFs** — offline demos with a fake `buzz` CLI (no relay).
+
+### Buzz Desktop UI (Playwright video)
+
+`camp-buzz post` → message + Festival footer visible in the channel UI.
+
+![camp-buzz in Buzz Desktop](docs/demos/camp-buzz-desktop-ui.jpg)
+
+<video src="docs/demos/camp-buzz-desktop-ui.mp4" controls width="100%" poster="docs/demos/camp-buzz-desktop-ui.jpg">
+  <a href="docs/demos/camp-buzz-desktop-ui.mp4">Download Desktop UI demo (mp4)</a>
+  ·
+  <a href="docs/demos/camp-buzz-desktop-ui.webm">webm</a>
+</video>
+
+Re-record (needs Buzz monorepo desktop dist + live relay):
+
+```bash
+export BUZZ_BIN=/path/to/buzz/target/release/buzz
+export BUZZ_DESKTOP_ROOT=/path/to/buzz/desktop
+just demo-ui
+```
+
+### Real CLI (VHS, full color)
+
+`doctor` → `post` (real `buzz`) → `buzz messages get` readback.
+
+<video src="docs/demos/camp-buzz-cli-real.mp4" controls width="100%">
+  <a href="docs/demos/camp-buzz-cli-real.mp4">Download CLI demo (mp4)</a>
+</video>
+
+![camp-buzz real CLI](docs/demos/camp-buzz-cli-real.gif)
+
+```bash
+export BUZZ_BIN=/path/to/buzz/target/release/buzz
+export BUZZ_PRIVATE_KEY=…   # never commit
+just vhs-cli-real           # needs vhs, ttyd, ffmpeg, live relay
+```
+
+### Fixture GIFs (offline / fake buzz)
+
+Re-record with `just vhs` (needs `vhs`, `ttyd`, `ffmpeg`).
+
+#### Plugin tour
 
 `doctor` → `bind` → `show` → ready `doctor` → `post` → `hook-install` →
 `camp buzz version`
 
 ![camp-buzz tour](docs/demos/camp-buzz-tour.gif)
 
-### Status post + footer
+#### Status post + footer
 
 `post` then the mock buzz log showing the Festival footer contract:
 

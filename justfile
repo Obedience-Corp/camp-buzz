@@ -158,3 +158,67 @@ smoke-real:
     echo "$got" | grep -q "real buzz e2e from camp-buzz"
     echo "$got" | grep -q "festival: REALSMOKE"
     echo "SMOKE-REAL OK channel=$channel"
+
+# Full-color VHS against real buzz CLI + live relay.
+# Requires: BUZZ_BIN, BUZZ_PRIVATE_KEY, relay on BUZZ_RELAY_URL (default :3000).
+[no-cd]
+vhs-cli-real: build
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{justfile_directory()}}"
+    mkdir -p docs/demos
+    export CAMP_BUZZ_CLI_REAL_ROOT=/tmp/camp-buzz-cli-real-demo
+    bash scripts/vhs-cli-real-fixture.sh >/dev/null
+    vhs docs/demos/camp-buzz-cli-real.tape
+    echo "Wrote docs/demos/camp-buzz-cli-real.gif and .mp4"
+
+# Playwright Desktop UI demo (records video) against Buzz monorepo + live relay.
+# Requires: BUZZ_DESKTOP_ROOT (default: sibling obey_example_repos/buzz/desktop),
+#           BUZZ_BIN, built desktop dist/, live relay, e2e seed data.
+[no-cd]
+demo-ui: build
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{justfile_directory()}}"
+    desktop="${BUZZ_DESKTOP_ROOT:-/Users/lancerogers/Dev/AI/obey_example_repos/buzz/desktop}"
+    buzz_bin="${BUZZ_BIN:-/Users/lancerogers/Dev/AI/obey_example_repos/buzz/target/release/buzz}"
+    if [[ ! -d "$desktop" ]]; then
+      echo "Buzz desktop not found at $desktop (set BUZZ_DESKTOP_ROOT)" >&2
+      exit 1
+    fi
+    if [[ ! -x "$buzz_bin" ]]; then
+      echo "buzz binary missing at $buzz_bin (set BUZZ_BIN)" >&2
+      exit 1
+    fi
+    if [[ ! -d "$desktop/dist" ]]; then
+      echo "desktop/dist missing — build Buzz desktop e2e dist first" >&2
+      exit 1
+    fi
+    export CAMP_BUZZ_ROOT="{{justfile_directory()}}"
+    export BUZZ_BIN="$buzz_bin"
+    export BUZZ_RELAY_URL="${BUZZ_RELAY_URL:-http://localhost:3000}"
+    mkdir -p docs/demos
+    (
+      cd "$desktop"
+      pw="${desktop}/node_modules/.bin/playwright"
+      if [[ ! -x "$pw" ]]; then
+        echo "playwright not installed in $desktop (pnpm install)" >&2
+        exit 1
+      fi
+      "$pw" test --config playwright.camp-buzz.config.ts
+    )
+    # Copy latest video + screenshot into docs/demos
+    src=$(find "$desktop/test-results/camp-buzz-demo" -name 'video.webm' 2>/dev/null | head -1)
+    shot=$(find "$desktop/test-results/camp-buzz-demo" -name 'test-finished-*.png' -o -name 'test-failed-*.png' 2>/dev/null | head -1)
+    if [[ -z "$src" ]]; then
+      echo "no playwright video found under test-results/camp-buzz-demo" >&2
+      exit 1
+    fi
+    cp "$src" docs/demos/camp-buzz-desktop-ui.webm
+    ffmpeg -y -i docs/demos/camp-buzz-desktop-ui.webm -c:v libx264 -pix_fmt yuv420p -movflags +faststart docs/demos/camp-buzz-desktop-ui.mp4
+    if [[ -n "${shot:-}" ]]; then
+      cp "$shot" docs/demos/camp-buzz-desktop-ui.jpg
+    else
+      ffmpeg -y -ss 00:00:03 -i docs/demos/camp-buzz-desktop-ui.webm -frames:v 1 -q:v 2 docs/demos/camp-buzz-desktop-ui.jpg
+    fi
+    echo "Wrote docs/demos/camp-buzz-desktop-ui.{webm,mp4,jpg}"

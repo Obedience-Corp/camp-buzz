@@ -1,0 +1,13 @@
+{
+  "name": "camp-buzz-demos",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "demo:ui": "playwright test tests/ui/camp-buzz-desktop-ui.spec.ts",
+    "demo:ui:install": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "typescript": "^5.8.0"
+  }
+}
