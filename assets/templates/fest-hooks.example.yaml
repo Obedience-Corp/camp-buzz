@@ -1,15 +1,27 @@
 # Example fest hooks snippet for Buzz status projection.
 # Enable only when camp-buzz and buzz CLI are installed and doctor is clean.
-# Fail-open: keep timeouts short; do not block fest on post failures.
+#
+# fest hook definitions take a single command string (fest splits it on
+# whitespace). fest defaults to fail: closed, which would block festival
+# work when Buzz is down or camp-buzz is absent; Buzz projection must never
+# block fest, so fail: open is required here, not optional.
 #
 # Requires: BUZZ_PRIVATE_KEY, buzz on PATH, and camp buzz bind
 # (relay_url as http://… base URL, e.g. http://localhost:3000).
-#
-# Map definition names to real fest lifecycle events for your fest version
-# (see: fest hooks list).
 
 hooks:
   definitions:
     buzz_status:
-      command: ["camp", "buzz", "post", "--from-hook"]
+      command: camp buzz post --from-hook
+      fail: open
       timeout: 30s
+
+# Bind the definition in a task or goal document's frontmatter. Bare
+# pre/post bindings run around the completion verb (task_complete on task
+# documents); a nested start stage binds around task_start:
+#
+# ---
+# fest_type: task
+# hooks:
+#   post: [buzz_status]
+# ---
