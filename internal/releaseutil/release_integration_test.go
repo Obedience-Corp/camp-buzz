@@ -64,6 +64,26 @@ func TestEnsureTagAbsentRejectsRemoteTag(t *testing.T) {
 	}
 }
 
+func TestEnsureTagAtOriginMain(t *testing.T) {
+	repo := newReleaseRepository(t)
+	t.Chdir(repo)
+	runGitTest(t, repo, "tag", "v0.1.0")
+	runGitTest(t, repo, "push", "origin", "v0.1.0")
+	if err := fetchOriginRefs(); err != nil {
+		t.Fatal(err)
+	}
+	if err := ensureTagAtOriginMain("v0.1.0"); err != nil {
+		t.Fatalf("tag at origin/main failed: %v", err)
+	}
+	writeTestFile(t, filepath.Join(repo, "ahead.txt"), "ahead")
+	runGitTest(t, repo, "add", "ahead.txt")
+	runGitTest(t, repo, "commit", "-m", "ahead")
+	runGitTest(t, repo, "tag", "v0.2.0")
+	if err := ensureTagAtOriginMain("v0.2.0"); err == nil {
+		t.Fatal("tag away from origin/main passed release readiness")
+	}
+}
+
 func newReleaseRepository(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()

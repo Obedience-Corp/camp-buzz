@@ -41,6 +41,22 @@ func runCurrent() error {
 	return nil
 }
 
+func runReady(tag string) error {
+	if err := ensureReleasesEnabled(); err != nil {
+		return err
+	}
+	if tag == "" {
+		return nil
+	}
+	if err := validateExplicitTag(tag); err != nil {
+		return err
+	}
+	if err := fetchOriginRefs(); err != nil {
+		return err
+	}
+	return ensureTagAtOriginMain(tag)
+}
+
 func runStable(level string) error {
 	if err := ensureReleasesEnabled(); err != nil {
 		return err
@@ -271,6 +287,21 @@ func ensureSyncedWithOriginMain() error {
 	}
 	if strings.TrimSpace(head) != strings.TrimSpace(originMain) {
 		return errors.New("local main is not in sync with origin/main; run `git pull --ff-only origin main`")
+	}
+	return nil
+}
+
+func ensureTagAtOriginMain(tag string) error {
+	tagCommit, err := runGitOutput("rev-parse", tag+"^{commit}")
+	if err != nil {
+		return err
+	}
+	originMain, err := runGitOutput("rev-parse", "origin/main")
+	if err != nil {
+		return err
+	}
+	if strings.TrimSpace(tagCommit) != strings.TrimSpace(originMain) {
+		return fmt.Errorf("release tag %s does not point to current origin/main", tag)
 	}
 	return nil
 }

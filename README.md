@@ -118,12 +118,16 @@ just install-assets   # → ~/.obey/plugins/camp-buzz/
 just release gate       # complete containerized release-readiness gate
 just release check      # validate goreleaser config
 just release snapshot   # local snapshot build
+just release package-check v0.1.0 # build and validate assets without publishing
 just release stable     # tag next patch and push (triggers GH release)
 # or: just release tag v0.1.0
 ```
 
 Both tag commands run `just release gate` after confirming a clean,
-synchronized `main` and before creating the tag.
+synchronized `main` and before creating the tag. The tag workflow then proves
+the tag still points to current `origin/main`, performs a non-publishing build,
+and validates all four archive names, packaged files, binary architectures,
+and SHA-256 checksums before the publishing job can start.
 
 Marketplace registration lives in
 [`Obedience-Corp/marketplace`](https://github.com/Obedience-Corp/marketplace)

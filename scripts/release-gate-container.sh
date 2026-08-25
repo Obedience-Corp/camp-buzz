@@ -4,7 +4,7 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 git_dir="$(git -C "$repo_root" rev-parse --absolute-git-dir)"
-go_image="${CAMP_BUZZ_GO_IMAGE:-golang@sha256:4557cf171e3cdf5053a298d5171b1a5f5734d920260c25f22c79e94760eb2084}" # 1.25.8-bookworm
+go_image="${CAMP_BUZZ_GO_IMAGE:-golang@sha256:298734aec230b5f3e8cee450ce6d7eccc39f1797ba548ee90d57e9803030c6c3}" # 1.25.9-bookworm
 gitleaks_image="${CAMP_BUZZ_GITLEAKS_IMAGE:-zricethezav/gitleaks@sha256:cdbb7c955abce02001a9f6c9f602fb195b7fadc1e812065883f695d1eeaba854}" # v8.28.0
 goreleaser_image="${CAMP_BUZZ_GORELEASER_IMAGE:-goreleaser/goreleaser@sha256:5be644c8c779677d069b7f50d5e655274c65b5e188c41268abd5b3713c416527}" # v2.15.2
 staticcheck_version="${CAMP_BUZZ_STATICCHECK_VERSION:-v0.6.1}"

@@ -21,6 +21,11 @@ snapshot:
     {{goreleaser}} release --snapshot --clean
 
 [no-cd]
+package-check TAG:
+    {{goreleaser}} release --clean --skip=publish
+    {{releaseutil}} artifacts --dir dist --tag {{TAG}}
+
+[no-cd]
 version:
     @go run ./cmd/camp-buzz version
 

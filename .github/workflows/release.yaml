@@ -30,6 +30,12 @@ jobs:
       - name: Release gate
         run: just release gate
 
+      - name: Verify tag is stable and points to current main
+        run: go run ./internal/releaseutil ready --tag "$GITHUB_REF_NAME"
+
+      - name: Build and verify release artifacts without publishing
+        run: just release package-check "$GITHUB_REF_NAME"
+
   release:
     needs: test
     runs-on: ubuntu-latest
@@ -52,7 +58,7 @@ jobs:
           just-version: 1.58.0
 
       - name: Validate release readiness
-        run: go run ./internal/releaseutil ready
+        run: go run ./internal/releaseutil ready --tag "$GITHUB_REF_NAME"
 
       - name: Check GoReleaser config
         run: just release check
