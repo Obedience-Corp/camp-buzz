@@ -1,5 +1,7 @@
 # camp-buzz
 
+[![Test](https://github.com/Obedience-Corp/camp-buzz/actions/workflows/test.yaml/badge.svg)](https://github.com/Obedience-Corp/camp-buzz/actions/workflows/test.yaml)
+
 Optional **Buzz** integration plugin for [camp](https://github.com/Obedience-Corp/camp).
 
 > [!IMPORTANT]
