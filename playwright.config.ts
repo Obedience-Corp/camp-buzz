@@ -1,11 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const desktop =
-  process.env.BUZZ_DESKTOP ??
-  "/Users/lancerogers/Dev/AI/obey_example_repos/buzz/desktop";
+const desktop = process.env.BUZZ_DESKTOP_ROOT;
+if (!desktop) {
+  throw new Error("BUZZ_DESKTOP_ROOT must point to the Buzz desktop checkout");
+}
 
 export default defineConfig({
   testDir: "./tests/ui",

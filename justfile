@@ -173,15 +173,15 @@ vhs-cli-real: build
     echo "Wrote docs/demos/camp-buzz-cli-real.gif and .mp4"
 
 # Playwright Desktop UI demo (records video) against Buzz monorepo + live relay.
-# Requires: BUZZ_DESKTOP_ROOT (default: sibling obey_example_repos/buzz/desktop),
-#           BUZZ_BIN, built desktop dist/, live relay, e2e seed data.
+# Requires: BUZZ_DESKTOP_ROOT, BUZZ_BIN, built desktop dist/, live relay,
+#           e2e seed data.
 [no-cd]
 demo-ui: build
     #!/usr/bin/env bash
     set -euo pipefail
     cd "{{justfile_directory()}}"
-    desktop="${BUZZ_DESKTOP_ROOT:-/Users/lancerogers/Dev/AI/obey_example_repos/buzz/desktop}"
-    buzz_bin="${BUZZ_BIN:-/Users/lancerogers/Dev/AI/obey_example_repos/buzz/target/release/buzz}"
+    desktop="${BUZZ_DESKTOP_ROOT:?set BUZZ_DESKTOP_ROOT to the Buzz desktop checkout}"
+    buzz_bin="${BUZZ_BIN:?set BUZZ_BIN to the Buzz CLI binary}"
     if [[ ! -d "$desktop" ]]; then
       echo "Buzz desktop not found at $desktop (set BUZZ_DESKTOP_ROOT)" >&2
       exit 1
