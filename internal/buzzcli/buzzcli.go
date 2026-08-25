@@ -2,11 +2,19 @@
 package buzzcli
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 )
+
+// DefaultCommandTimeout bounds calls to the external Buzz CLI when the caller
+// has not supplied an earlier deadline.
+const DefaultCommandTimeout = 30 * time.Second
+
+type commandFactory func(context.Context, string, ...string) *exec.Cmd
 
 // LookPath finds the buzz binary on PATH.
 func LookPath() (string, error) {
@@ -22,20 +30,34 @@ func HasPrivateKey() bool {
 	return strings.TrimSpace(os.Getenv("BUZZ_PRIVATE_KEY")) != ""
 }
 
-// SendMessage runs: buzz messages send --channel <id> --content -
+// SendMessage runs: buzz messages send --channel <id> --content -.
 // body is written to stdin. relayURL is set via BUZZ_RELAY_URL if non-empty.
-func SendMessage(channelID, body, relayURL string) error {
+// The command is limited to DefaultCommandTimeout; an earlier caller deadline
+// or cancellation always wins.
+func SendMessage(ctx context.Context, channelID, body, relayURL string) error {
+	return sendMessage(ctx, channelID, body, relayURL, DefaultCommandTimeout, LookPath, exec.CommandContext)
+}
+
+func sendMessage(
+	ctx context.Context,
+	channelID, body, relayURL string,
+	timeout time.Duration,
+	lookPath func() (string, error),
+	newCommand commandFactory,
+) error {
 	if channelID == "" {
 		return fmt.Errorf("channel id required")
 	}
 	if !HasPrivateKey() {
 		return fmt.Errorf("BUZZ_PRIVATE_KEY is not set")
 	}
-	bin, err := LookPath()
+	bin, err := lookPath()
 	if err != nil {
 		return err
 	}
-	cmd := exec.Command(bin, "messages", "send", "--channel", channelID, "--content", "-")
+	commandCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	cmd := newCommand(commandCtx, bin, "messages", "send", "--channel", channelID, "--content", "-")
 	cmd.Stdin = strings.NewReader(body)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -45,7 +67,10 @@ func SendMessage(channelID, body, relayURL string) error {
 	}
 	cmd.Env = env
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("buzz messages send: %w", err)
+		if ctxErr := commandCtx.Err(); ctxErr != nil {
+			return fmt.Errorf("buzz messages send for channel %q: %w (process: %v)", channelID, ctxErr, err)
+		}
+		return fmt.Errorf("buzz messages send for channel %q: %w", channelID, err)
 	}
 	return nil
 }

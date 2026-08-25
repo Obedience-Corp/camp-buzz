@@ -93,7 +93,7 @@ Used by humans, fest hooks (--from-hook), and agents.`,
 				body = body + footer
 			}
 
-			if err := buzzcli.SendMessage(cfg.ChannelID, body, cfg.RelayURL); err != nil {
+			if err := buzzcli.SendMessage(cmd.Context(), cfg.ChannelID, body, cfg.RelayURL); err != nil {
 				return err
 			}
 			fmt.Fprintln(cmd.OutOrStdout(), "posted")
