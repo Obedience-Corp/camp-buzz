@@ -3,11 +3,18 @@
 Last run: **2026-08-25**
 
 ```text
-camp-buzz candidate: 402fb44adfa881468d61369d74d8a9e65df3be89
+snapshot proof commit: 402fb44adfa881468d61369d74d8a9e65df3be89
+reviewed PR head: fab7a38e051c4564cdc4dec237e1db4f1f6e9224
+merged public baseline: b97ca786120fd3eb0cc290ff93eb8c0b79250030
 block/buzz origin/main: 113a33b7e49b7173ee1767c49ef2f49c63803034
 Go: 1.25.9
 GoReleaser: 2.15.2
 ```
+
+The changes after the snapshot proof and through the reviewed PR head hardened
+the reusable smoke harness and public documentation; they did not change the Go
+runtime or packaged artifact surface. GitHub merged that reviewed head as the
+public baseline shown above.
 
 ## Proven scope
 

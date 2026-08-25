@@ -118,6 +118,9 @@ func (opts *postOptions) appendFooter(body string, cfg config.Config) (string, e
 		return "", err
 	}
 	footer := fmt.Sprintf("\n\n---\nfestival: %s\ntask: %s\npath: %s\ngate: %s\n---\n", festival, task, path, gate)
+	if len(body)+len(footer) > buzzcli.MaxContentBytes {
+		return "", fmt.Errorf("message with Festival footer exceeds Buzz limit of %d bytes", buzzcli.MaxContentBytes)
+	}
 	return body + footer, nil
 }
 

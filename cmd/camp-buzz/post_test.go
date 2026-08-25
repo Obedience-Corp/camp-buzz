@@ -47,6 +47,14 @@ func TestAppendFooterDefaultsForHook(t *testing.T) {
 	}
 }
 
+func TestAppendFooterRejectsComposedPayloadOverLimit(t *testing.T) {
+	body := strings.Repeat("x", buzzcli.MaxContentBytes)
+	_, err := (&postOptions{}).appendFooter(body, config.Config{})
+	if err == nil || !strings.Contains(err.Error(), "with Festival footer exceeds") {
+		t.Fatalf("error = %v, want composed payload limit error", err)
+	}
+}
+
 func TestValidateFooterRejectsMalformedFields(t *testing.T) {
 	tests := []struct {
 		name, festival, task, path, gate string

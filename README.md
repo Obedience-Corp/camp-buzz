@@ -34,7 +34,7 @@ truth; Buzz is a projection surface.
 
 ## Demo
 
-Two proof levels:
+Three proof levels:
 
 1. **Buzz Desktop UI** — Playwright records a real browser video of a
    `camp-buzz post` appearing in the channel timeline (live local relay).
