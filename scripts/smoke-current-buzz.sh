@@ -10,14 +10,46 @@ if [[ "$CAMP_BUZZ_CONTAINER_SMOKE" != "1" ]]; then
   exit 1
 fi
 
-export PATH="${BUZZ_BIN_DIR}:${PATH}"
-export HOME="${CAMP_BUZZ_SMOKE_HOME:-/tmp/camp-buzz-smoke-home}"
-export CAMP_ROOT="${CAMP_BUZZ_SMOKE_ROOT:-/tmp/camp-buzz-smoke-campaign}"
-mkdir -p "$HOME" "$CAMP_ROOT/.campaign"
+readonly local_relay_url="http://localhost:3030"
+readonly bind_relay_url="ws://localhost:3030"
+if [[ "$BUZZ_RELAY_URL" != "$local_relay_url" ]]; then
+  echo "BUZZ_RELAY_URL must be $local_relay_url for this local-only smoke" >&2
+  exit 1
+fi
 
-BUZZ_PRIVATE_KEY="$(od -An -N32 -tx1 /dev/urandom | tr -d ' \n')"
+smoke_root="$(mktemp -d)"
+cleanup() {
+  unset BUZZ_PRIVATE_KEY
+  rm -rf -- "$smoke_root"
+}
+trap cleanup EXIT
+
+export PATH="${BUZZ_BIN_DIR}:${PATH}"
+export HOME="$smoke_root/home"
+export CAMP_ROOT="$smoke_root/campaign"
+readonly output_dir="$smoke_root/output"
+mkdir -p "$HOME" "$CAMP_ROOT/.campaign" "$output_dir"
+
+generate_private_key() {
+  local candidate
+  while true; do
+    candidate="$(od -An -N32 -tx1 /dev/urandom | tr -d ' \n')"
+    if python3 - "$candidate" <<'PY'
+import sys
+
+key = int(sys.argv[1], 16)
+order = int("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141", 16)
+raise SystemExit(0 if 0 < key < order else 1)
+PY
+    then
+      printf '%s' "$candidate"
+      return
+    fi
+  done
+}
+
+BUZZ_PRIVATE_KEY="$(generate_private_key)"
 export BUZZ_PRIVATE_KEY
-trap 'unset BUZZ_PRIVATE_KEY' EXIT
 
 channel_json="$(buzz channels create \
   --name camp-buzz-CB0001-disposable \
@@ -30,11 +62,11 @@ test -n "$channel"
 
 camp-buzz bind \
   --channel "$channel" \
-  --relay ws://localhost:3030 \
+  --relay "$bind_relay_url" \
   --festival CB0001 \
   --festival-path festivals/active/camp-buzz-first-public-release-CB0001 \
-  >/tmp/camp-buzz-bind.out
-grep -q "wrote" /tmp/camp-buzz-bind.out
+  >"$output_dir/bind.out"
+grep -q "wrote" "$output_dir/bind.out"
 grep -q "relay_url: http://localhost:3030" \
   "$CAMP_ROOT/.campaign/integrations/buzz.yaml"
 
@@ -46,11 +78,11 @@ camp-buzz post \
   -m "CB0001 flag path" \
   --task CB0001:P001.S03.T02 \
   --gate pass \
-  >/tmp/camp-buzz-flag.out
+  >"$output_dir/flag.out"
 printf "CB0001 stdin path\n" | camp-buzz post \
   --task CB0001:P001.S03.T02-stdin \
   --gate pending \
-  >/tmp/camp-buzz-stdin.out
+  >"$output_dir/stdin.out"
 
 hook_yaml="$(camp-buzz hook-install)"
 printf '%s\n' "$hook_yaml" | grep -q "command: camp buzz post --from-hook"
@@ -59,10 +91,10 @@ camp-buzz post \
   --from-hook \
   --task CB0001:P001.S03.T02-hook \
   --gate n/a \
-  >/tmp/camp-buzz-hook.out
+  >"$output_dir/hook.out"
 
-buzz messages get --channel "$channel" --limit 10 >/tmp/camp-buzz-messages.json
-python3 - /tmp/camp-buzz-messages.json <<'PY'
+buzz messages get --channel "$channel" --limit 10 >"$output_dir/messages.json"
+python3 - "$output_dir/messages.json" <<'PY'
 import json
 import sys
 
@@ -96,13 +128,13 @@ expect_failure() {
   grep -q "$expected" "$output"
 }
 
-expect_failure /tmp/camp-buzz-fail-key.out "BUZZ_PRIVATE_KEY is not set" \
+expect_failure "$output_dir/fail-key.out" "BUZZ_PRIVATE_KEY is not set" \
   env -u BUZZ_PRIVATE_KEY camp-buzz post -m rejected
-expect_failure /tmp/camp-buzz-fail-channel.out "channel id must be a UUID" \
+expect_failure "$output_dir/fail-channel.out" "channel id must be a UUID" \
   camp-buzz post -m rejected --channel not-a-uuid
-expect_failure /tmp/camp-buzz-fail-empty.out "message body required" \
+expect_failure "$output_dir/fail-empty.out" "message body required" \
   bash -c 'printf "" | camp-buzz post'
-expect_failure /tmp/camp-buzz-fail-gate.out "gate must be" \
+expect_failure "$output_dir/fail-gate.out" "gate must be" \
   camp-buzz post -m rejected --gate maybe
 
 printf '%s\n' \
