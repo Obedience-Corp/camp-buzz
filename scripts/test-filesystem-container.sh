@@ -3,7 +3,7 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-go_image="${CAMP_BUZZ_GO_IMAGE:-golang:1.25.6-bookworm}"
+go_image="${CAMP_BUZZ_GO_IMAGE:-golang:1.25.8-bookworm}"
 
 docker run --rm \
   --mount "type=bind,src=${repo_root},dst=/src,readonly" \
