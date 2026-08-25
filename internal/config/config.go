@@ -63,9 +63,8 @@ func Resolve(campaignRoot string) (Config, string, error) {
 }
 
 // NormalizeRelayURL converts ws:// / wss:// to http:// / https:// for buzz CLI.
-// The real buzz CLI documents BUZZ_RELAY_URL as an HTTP base (default
-// http://localhost:3000). WebSocket forms are accepted by some builds after
-// normalization, but HTTP is the supported contract.
+// The Buzz CLI documents BUZZ_RELAY_URL as an HTTP base (default
+// http://localhost:3000) and normalizes WebSocket forms to HTTP forms.
 func NormalizeRelayURL(u string) string {
 	switch {
 	case len(u) >= 6 && u[:6] == "wss://":

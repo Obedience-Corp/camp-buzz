@@ -97,7 +97,7 @@ func ValidateChannelID(value string) error {
 	return nil
 }
 
-// ValidateContent enforces Buzz's non-empty 65,536-byte message contract.
+// ValidateContent enforces Buzz's 65,536-byte limit and camp-buzz's non-empty policy.
 func ValidateContent(value string) error {
 	if strings.TrimSpace(value) == "" {
 		return fmt.Errorf("message body required")
