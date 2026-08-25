@@ -188,10 +188,11 @@ just vhs           # regenerate docs/demos/*.gif
 Smoke and VHS use `scripts/vhs-fixture.sh` + `scripts/fake-buzz` so `post`
 is tested without a real Buzz deployment.
 
-`just release gate` mounts the checkout read-only and runs formatting, vet,
-unit/race tests, the fake-Buzz integration flow, Staticcheck, govulncheck,
-working-tree and full-history Gitleaks scans, a binary build, and GoReleaser
-configuration validation in containers. It fails if the checkout changes.
+`just release gate` mounts the checkout read-only and runs Actionlint,
+formatting, vet, unit/race tests, the fake-Buzz integration flow, Staticcheck,
+govulncheck, working-tree and full-history Gitleaks scans, a binary build, and
+GoReleaser configuration validation in containers. It fails if the checkout
+changes.
 
 ## License
 
