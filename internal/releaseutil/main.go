@@ -27,7 +27,22 @@ func run(args []string) error {
 	case "current":
 		return runCurrent()
 	case "ready":
-		return ensureReleasesEnabled()
+		fs := flag.NewFlagSet("ready", flag.ContinueOnError)
+		fs.SetOutput(os.Stderr)
+		tag := fs.String("tag", "", "release tag to verify against origin/main")
+		if err := fs.Parse(args[1:]); err != nil {
+			return err
+		}
+		return runReady(*tag)
+	case "artifacts":
+		fs := flag.NewFlagSet("artifacts", flag.ContinueOnError)
+		fs.SetOutput(os.Stderr)
+		dir := fs.String("dir", "dist", "GoReleaser distribution directory")
+		tag := fs.String("tag", "", "stable release tag")
+		if err := fs.Parse(args[1:]); err != nil {
+			return err
+		}
+		return verifyArtifacts(*dir, *tag)
 	case "stable":
 		fs := flag.NewFlagSet("stable", flag.ContinueOnError)
 		fs.SetOutput(os.Stderr)
@@ -61,6 +76,7 @@ func printHelp(out io.Writer) {
 	fmt.Fprintln(out, "  just release current")
 	fmt.Fprintln(out, "  just release check")
 	fmt.Fprintln(out, "  just release snapshot")
+	fmt.Fprintln(out, "  just release package-check v0.1.0")
 	fmt.Fprintln(out, "  just release tag v0.1.0")
 	if !releasesEnabled {
 		fmt.Fprintln(out)

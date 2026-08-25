@@ -5,8 +5,7 @@ default:
     @just --list --unsorted --justfile {{source_file()}}
 
 [no-cd]
-all:
-    go test ./...
+all: unit filesystem
 
 [no-cd]
 unit:
@@ -15,6 +14,10 @@ unit:
 [no-cd]
 race:
     go test -race ./...
+
+[no-cd]
+filesystem:
+    bash scripts/test-filesystem-container.sh
 
 [no-cd]
 short:

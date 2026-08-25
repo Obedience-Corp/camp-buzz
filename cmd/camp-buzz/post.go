@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
-	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/Obedience-Corp/camp-buzz/internal/buzzcli"
@@ -11,19 +11,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newPostCmd() *cobra.Command {
-	var (
-		message  string
-		festival string
-		task     string
-		pathFlag string
-		gate     string
-		channel  string
-		relay    string
-		fromHook bool
-		noFooter bool
-	)
+type postOptions struct {
+	message, festival, task, path, gate string
+	channel, relay                      string
+	fromHook, noFooter                  bool
+}
 
+func newPostCmd() *cobra.Command {
+	opts := &postOptions{}
 	cmd := &cobra.Command{
 		Use:   "post",
 		Short: "Post a Festival status message to Buzz",
@@ -32,83 +27,125 @@ func newPostCmd() *cobra.Command {
 
 Reads body from --message or stdin. Never logs private keys.
 Used by humans, fest hooks (--from-hook), and agents.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			root := campaignRoot()
-			cfg, _, err := config.Resolve(root)
-			if err != nil {
-				return err
-			}
-			if channel != "" {
-				cfg.ChannelID = channel
-			}
-			if relay != "" {
-				cfg.RelayURL = config.NormalizeRelayURL(relay)
-			}
-			if festival != "" {
-				cfg.FestivalID = festival
-			}
-			if pathFlag != "" {
-				cfg.FestivalPath = pathFlag
-			}
-			if cfg.ChannelID == "" {
-				return fmt.Errorf("channel required (--channel, BUZZ_CHANNEL, or camp buzz bind)")
-			}
-
-			body := strings.TrimSpace(message)
-			if body == "" {
-				// stdin
-				if fromHook {
-					// hooks may pass empty message with only metadata
-					body = "Festival status update"
-				} else {
-					b, err := io.ReadAll(os.Stdin)
-					if err != nil {
-						return fmt.Errorf("read stdin: %w", err)
-					}
-					body = strings.TrimSpace(string(b))
-				}
-			}
-			if body == "" {
-				return fmt.Errorf("message body required (--message or stdin)")
-			}
-
-			if !noFooter {
-				fest := cfg.FestivalID
-				if fest == "" {
-					fest = "-"
-				}
-				t := task
-				if t == "" {
-					t = "-"
-				}
-				p := cfg.FestivalPath
-				if p == "" {
-					p = "-"
-				}
-				g := gate
-				if g == "" {
-					g = "n/a"
-				}
-				footer := fmt.Sprintf("\n\n---\nfestival: %s\ntask: %s\npath: %s\ngate: %s\n---\n", fest, t, p, g)
-				body = body + footer
-			}
-
-			if err := buzzcli.SendMessage(cfg.ChannelID, body, cfg.RelayURL); err != nil {
-				return err
-			}
-			fmt.Fprintln(cmd.OutOrStdout(), "posted")
-			return nil
-		},
+		RunE: opts.run,
 	}
-
-	cmd.Flags().StringVarP(&message, "message", "m", "", "Message body (else stdin)")
-	cmd.Flags().StringVar(&festival, "festival", "", "Festival id for footer")
-	cmd.Flags().StringVar(&task, "task", "", "Task ref for footer")
-	cmd.Flags().StringVar(&pathFlag, "path", "", "Festival path for footer")
-	cmd.Flags().StringVar(&gate, "gate", "", "Gate status: pending|pass|fail|n/a")
-	cmd.Flags().StringVar(&channel, "channel", "", "Override channel UUID")
-	cmd.Flags().StringVar(&relay, "relay", "", "Override relay URL")
-	cmd.Flags().BoolVar(&fromHook, "from-hook", false, "Invoked from a fest lifecycle hook")
-	cmd.Flags().BoolVar(&noFooter, "no-footer", false, "Do not append status footer")
+	cmd.Flags().StringVarP(&opts.message, "message", "m", "", "Message body (else stdin)")
+	cmd.Flags().StringVar(&opts.festival, "festival", "", "Festival id for footer")
+	cmd.Flags().StringVar(&opts.task, "task", "", "Task ref for footer")
+	cmd.Flags().StringVar(&opts.path, "path", "", "Festival path for footer")
+	cmd.Flags().StringVar(&opts.gate, "gate", "", "Gate status: pending|pass|fail|n/a")
+	cmd.Flags().StringVar(&opts.channel, "channel", "", "Override channel UUID")
+	cmd.Flags().StringVar(&opts.relay, "relay", "", "Override relay URL")
+	cmd.Flags().BoolVar(&opts.fromHook, "from-hook", false, "Invoked from a fest lifecycle hook")
+	cmd.Flags().BoolVar(&opts.noFooter, "no-footer", false, "Do not append status footer")
 	return cmd
+}
+
+func (opts *postOptions) run(cmd *cobra.Command, _ []string) error {
+	cfg, err := opts.resolveConfig()
+	if err != nil {
+		return err
+	}
+	body, err := readPostBody(opts.message, cmd.InOrStdin(), opts.fromHook)
+	if err != nil {
+		return err
+	}
+	body, err = opts.appendFooter(body, cfg)
+	if err != nil {
+		return err
+	}
+	if err := buzzcli.SendMessage(cmd.Context(), cfg.ChannelID, body, cfg.RelayURL); err != nil {
+		return err
+	}
+	_, err = fmt.Fprintln(cmd.OutOrStdout(), "posted")
+	return err
+}
+
+func (opts *postOptions) resolveConfig() (config.Config, error) {
+	cfg, _, err := config.Resolve(campaignRoot())
+	if err != nil {
+		return config.Config{}, err
+	}
+	if opts.channel != "" {
+		cfg.ChannelID = opts.channel
+	}
+	if opts.relay != "" {
+		cfg.RelayURL = config.NormalizeRelayURL(opts.relay)
+	}
+	if opts.festival != "" {
+		cfg.FestivalID = opts.festival
+	}
+	if opts.path != "" {
+		cfg.FestivalPath = opts.path
+	}
+	return cfg, nil
+}
+
+func readPostBody(message string, stdin io.Reader, fromHook bool) (string, error) {
+	body := strings.TrimSpace(message)
+	if body == "" && fromHook {
+		return "Festival status update", nil
+	}
+	if body == "" {
+		limited := &io.LimitedReader{R: stdin, N: buzzcli.MaxContentBytes + 1}
+		data, err := io.ReadAll(limited)
+		if err != nil {
+			return "", fmt.Errorf("read stdin: %w", err)
+		}
+		if len(data) > buzzcli.MaxContentBytes {
+			return "", fmt.Errorf("stdin exceeds Buzz limit of %d bytes", buzzcli.MaxContentBytes)
+		}
+		body = strings.TrimSpace(string(data))
+	}
+	if body == "" {
+		return "", fmt.Errorf("message body required (--message or stdin)")
+	}
+	if len(body) > buzzcli.MaxContentBytes {
+		return "", fmt.Errorf("message body exceeds Buzz limit of %d bytes", buzzcli.MaxContentBytes)
+	}
+	return body, nil
+}
+
+func (opts *postOptions) appendFooter(body string, cfg config.Config) (string, error) {
+	if opts.noFooter {
+		return body, nil
+	}
+	festival := valueOr(cfg.FestivalID, "-")
+	task := valueOr(opts.task, "-")
+	path := valueOr(cfg.FestivalPath, "-")
+	gate := valueOr(opts.gate, "n/a")
+	if err := validateFooter(festival, task, path, gate); err != nil {
+		return "", err
+	}
+	footer := fmt.Sprintf("\n\n---\nfestival: %s\ntask: %s\npath: %s\ngate: %s\n---\n", festival, task, path, gate)
+	return body + footer, nil
+}
+
+func validateFooter(festival, task, path, gate string) error {
+	for _, field := range []struct {
+		name, value string
+		max         int
+	}{
+		{name: "festival", value: festival, max: 128},
+		{name: "task", value: task, max: 256},
+		{name: "path", value: path, max: 1024},
+	} {
+		if len(field.value) > field.max || strings.ContainsAny(field.value, "\r\n\x00") {
+			return fmt.Errorf("%s footer field is invalid", field.name)
+		}
+	}
+	if path != "-" && (filepath.IsAbs(path) || filepath.Clean(path) == ".." || strings.HasPrefix(filepath.Clean(path), ".."+string(filepath.Separator))) {
+		return fmt.Errorf("path footer field must be campaign-relative")
+	}
+	if gate != "pending" && gate != "pass" && gate != "fail" && gate != "n/a" {
+		return fmt.Errorf("gate must be pending, pass, fail, or n/a")
+	}
+	return nil
+}
+
+func valueOr(value, fallback string) string {
+	if value == "" {
+		return fallback
+	}
+	return value
 }

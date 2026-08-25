@@ -1,6 +1,13 @@
 # camp-buzz
 
+[![Test](https://github.com/Obedience-Corp/camp-buzz/actions/workflows/test.yaml/badge.svg)](https://github.com/Obedience-Corp/camp-buzz/actions/workflows/test.yaml)
+
 Optional **Buzz** integration plugin for [camp](https://github.com/Obedience-Corp/camp).
+
+> [!IMPORTANT]
+> This is an independent Obedience Corp project. It is not affiliated with,
+> endorsed by, or supported by Block, Inc. Buzz names and trademarks belong to
+> their respective owners.
 
 This is **not** native Buzz support in camp or fest. It is a standalone
 `camp-*` plugin binary. When installed on your `PATH`, camp discovers it as:
@@ -115,11 +122,19 @@ just install-assets   # → ~/.obey/plugins/camp-buzz/
 ### Release cut (maintainers)
 
 ```bash
+just release gate       # complete containerized release-readiness gate
 just release check      # validate goreleaser config
 just release snapshot   # local snapshot build
+just release package-check v0.1.0 # build and validate assets without publishing
 just release stable     # tag next patch and push (triggers GH release)
 # or: just release tag v0.1.0
 ```
+
+Both tag commands run `just release gate` after confirming a clean,
+synchronized `main` and before creating the tag. The tag workflow then proves
+the tag still points to current `origin/main`, performs a non-publishing build,
+and validates all four archive names, packaged files, binary architectures,
+and SHA-256 checksums before the publishing job can start.
 
 Marketplace registration lives in
 [`Obedience-Corp/marketplace`](https://github.com/Obedience-Corp/marketplace)
@@ -169,7 +184,9 @@ Hooks must **fail open** — do not block fest advance on post failures.
 
 ```bash
 just build
-just test          # unit + integration (fake buzz fixture)
+just test unit     # pure, host-safe unit suite
+just test all      # unit + containerized filesystem integration suite
+just release gate # full read-only-source release gate used by CI/tagging
 just smoke         # full CLI smoke with fixture
 just run doctor
 just vhs           # regenerate docs/demos/*.gif
@@ -178,6 +195,16 @@ just vhs           # regenerate docs/demos/*.gif
 Smoke and VHS use `scripts/vhs-fixture.sh` + `scripts/fake-buzz` so `post`
 is tested without a real Buzz deployment.
 
+`just release gate` mounts the checkout read-only and runs Actionlint,
+formatting, vet, unit/race tests, the fake-Buzz integration flow, Staticcheck,
+govulncheck, working-tree and full-history Gitleaks scans, a binary build, and
+GoReleaser configuration validation in containers. It fails if the checkout
+changes.
+
 ## License
 
 Apache License 2.0. See [LICENSE](./LICENSE).
+
+Security reports and support expectations are documented in
+[SECURITY.md](./SECURITY.md) and [SUPPORT.md](./SUPPORT.md). Contributions are
+welcome under [CONTRIBUTING.md](./CONTRIBUTING.md).

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/Obedience-Corp/camp-buzz/internal/buzzcli"
 	"github.com/Obedience-Corp/camp-buzz/internal/config"
 	"github.com/spf13/cobra"
 )
@@ -39,18 +40,36 @@ func newBindCmd() *cobra.Command {
 			if cfg.ChannelID == "" {
 				return fmt.Errorf("--channel is required when no channel_id is already bound")
 			}
+			cfg.RelayURL = config.NormalizeRelayURL(cfg.RelayURL)
+			if err := validateBindConfig(cfg); err != nil {
+				return err
+			}
 			path, err := config.Write(root, cfg)
 			if err != nil {
 				return err
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "wrote %s\n", path)
+			fmt.Fprintf(cmd.OutOrStdout(), "wrote %s\n", safeDisplay(path, "(unknown)"))
 			return nil
 		},
 	}
 
-	cmd.Flags().StringVar(&relay, "relay", "", "Buzz relay HTTP base URL (e.g. http://localhost:3000)")
-	cmd.Flags().StringVar(&channel, "channel", "", "Buzz channel UUID")
-	cmd.Flags().StringVar(&festivalID, "festival", "", "Default festival id for footers")
-	cmd.Flags().StringVar(&festivalPath, "festival-path", "", "Optional festival path relative to campaign")
+	addBindFlags(cmd, &relay, &channel, &festivalID, &festivalPath)
 	return cmd
+}
+
+func addBindFlags(cmd *cobra.Command, relay, channel, festivalID, festivalPath *string) {
+	cmd.Flags().StringVar(relay, "relay", "", "Buzz relay HTTP base URL (e.g. http://localhost:3000)")
+	cmd.Flags().StringVar(channel, "channel", "", "Buzz channel UUID")
+	cmd.Flags().StringVar(festivalID, "festival", "", "Default festival id for footers")
+	cmd.Flags().StringVar(festivalPath, "festival-path", "", "Optional festival path relative to campaign")
+}
+
+func validateBindConfig(cfg config.Config) error {
+	if err := buzzcli.ValidateChannelID(cfg.ChannelID); err != nil {
+		return err
+	}
+	if err := buzzcli.ValidateRelayURL(cfg.RelayURL); err != nil {
+		return err
+	}
+	return validateFooter(valueOr(cfg.FestivalID, "-"), "-", valueOr(cfg.FestivalPath, "-"), "n/a")
 }

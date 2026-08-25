@@ -10,8 +10,6 @@ import (
 	"strings"
 )
 
-const goreleaserCmd = "github.com/goreleaser/goreleaser/v2@v2.15.2"
-
 var stableTagPattern = regexp.MustCompile(`^v(\d+)\.(\d+)\.(\d+)$`)
 
 type stableVersion struct {
@@ -43,6 +41,22 @@ func runCurrent() error {
 	return nil
 }
 
+func runReady(tag string) error {
+	if err := ensureReleasesEnabled(); err != nil {
+		return err
+	}
+	if tag == "" {
+		return nil
+	}
+	if err := validateExplicitTag(tag); err != nil {
+		return err
+	}
+	if err := fetchOriginRefs(); err != nil {
+		return err
+	}
+	return ensureTagAtOriginMain(tag)
+}
+
 func runStable(level string) error {
 	if err := ensureReleasesEnabled(); err != nil {
 		return err
@@ -62,7 +76,7 @@ func runStable(level string) error {
 	if err := ensureSyncedWithOriginMain(); err != nil {
 		return err
 	}
-	if err := runGoReleaserCheck(); err != nil {
+	if err := runReleaseGate(); err != nil {
 		return err
 	}
 
@@ -98,7 +112,7 @@ func runTag(version string) error {
 	if err := ensureSyncedWithOriginMain(); err != nil {
 		return err
 	}
-	if err := runGoReleaserCheck(); err != nil {
+	if err := runReleaseGate(); err != nil {
 		return err
 	}
 
@@ -277,12 +291,27 @@ func ensureSyncedWithOriginMain() error {
 	return nil
 }
 
-func runGoReleaserCheck() error {
-	cmd := exec.Command("go", "run", goreleaserCmd, "check")
+func ensureTagAtOriginMain(tag string) error {
+	tagCommit, err := runGitOutput("rev-parse", tag+"^{commit}")
+	if err != nil {
+		return err
+	}
+	originMain, err := runGitOutput("rev-parse", "origin/main")
+	if err != nil {
+		return err
+	}
+	if strings.TrimSpace(tagCommit) != strings.TrimSpace(originMain) {
+		return fmt.Errorf("release tag %s does not point to current origin/main", tag)
+	}
+	return nil
+}
+
+func runReleaseGate() error {
+	cmd := exec.Command("just", "release", "gate")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("goreleaser check failed: %w", err)
+		return fmt.Errorf("release gate failed: %w", err)
 	}
 	return nil
 }

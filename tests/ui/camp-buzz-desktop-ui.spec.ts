@@ -5,7 +5,7 @@
  * Requires:
  *   - buzz relay on http://localhost:3000
  *   - BUZZ_BIN / real buzz on PATH
- *   - desktop e2e dist at $BUZZ_DESKTOP/dist
+ *   - desktop e2e dist at $BUZZ_DESKTOP_ROOT/dist
  *
  * Run: just demo-ui  (from camp-buzz)
  */
@@ -17,14 +17,16 @@ import { expect, test } from "@playwright/test";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const campBuzzRoot = path.resolve(__dirname, "../..");
 
-// Buzz desktop checkout (prefer hermit/worktree used in this environment)
-const BUZZ_DESKTOP =
-  process.env.BUZZ_DESKTOP ??
-  "/Users/lancerogers/Dev/AI/obey_example_repos/buzz/desktop";
+function requiredEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`${name} must be set for the live Buzz UI proof`);
+  }
+  return value;
+}
 
-// Tyler's test identity from Buzz desktop e2e helpers (seeded by setup-desktop-test-data).
-const TYLER_SK =
-  "3dbaebadb5dfd777ff25149ee230d907a15a9e1294b40b830661e65bb42f6c03";
+const BUZZ_DESKTOP = requiredEnv("BUZZ_DESKTOP_ROOT");
+const BUZZ_PRIVATE_KEY = requiredEnv("BUZZ_PRIVATE_KEY");
 
 async function loadInstallRelayBridge() {
   // Dynamic import from the Buzz desktop tree so we reuse their real bridge.
@@ -54,9 +56,7 @@ test.describe("camp-buzz message visible in Buzz Desktop UI", () => {
   test("posts via camp-buzz and appears in channel timeline", async ({
     page,
   }) => {
-    const buzzBin =
-      process.env.BUZZ_BIN ??
-      "/Users/lancerogers/Dev/AI/obey_example_repos/buzz/target/release/buzz";
+    const buzzBin = requiredEnv("BUZZ_BIN");
     const campBuzzBin = path.join(campBuzzRoot, "bin/camp-buzz");
     const relay = process.env.BUZZ_RELAY_URL ?? "http://localhost:3000";
 
@@ -77,7 +77,7 @@ test.describe("camp-buzz message visible in Buzz Desktop UI", () => {
           "open",
         ],
         {
-          BUZZ_PRIVATE_KEY: TYLER_SK,
+          BUZZ_PRIVATE_KEY,
           BUZZ_RELAY_URL: relay,
           BUZZ_AUTH_TAG: "",
         },
@@ -104,7 +104,7 @@ test.describe("camp-buzz message visible in Buzz Desktop UI", () => {
         "pass",
       ],
       {
-        BUZZ_PRIVATE_KEY: TYLER_SK,
+        BUZZ_PRIVATE_KEY,
         BUZZ_RELAY_URL: relay,
         PATH: `${path.dirname(buzzBin)}:${process.env.PATH ?? ""}`,
       },
