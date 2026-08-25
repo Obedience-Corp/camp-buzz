@@ -1,4 +1,4 @@
-# Pre-release verification (camp-buzz)
+# Release verification (camp-buzz)
 
 Last run: **2026-08-25**
 
@@ -29,6 +29,12 @@ public baseline shown above.
 This proves the current local CLI/relay path. It does **not** claim
 compatibility with Block's hosted or production relay.
 
+The verified public release is
+[`v0.1.2`](https://github.com/Obedience-Corp/camp-buzz/releases/tag/v0.1.2).
+The earlier tags remain immutable. `v0.1.2` is the fix-forward release whose
+binary reports its published version in both release archives and
+`go install ...@latest` builds.
+
 ## Results
 
 | Gate | Status |
@@ -48,6 +54,10 @@ compatibility with Block's hosted or production relay.
 | Packaged docs, assets, completions, license/notice | Pass — every archive |
 | Binary OS/architecture metadata | Pass — 4/4 |
 | Native snapshot binary `version` and `--help` | Pass |
+| Public `v0.1.2` archive/checksum matrix | Pass — 4/4 |
+| Anonymous Festival `v0.3.2` marketplace install | Pass |
+| Installer-managed executable and runtime templates | Pass |
+| `camp buzz version`, isolated doctor/post, Fest hook resolution | Pass |
 
 All disposable relay containers, networks, data/build/cache volumes, generated
 key material, channel state, and snapshot artifacts were removed after proof.
@@ -90,21 +100,18 @@ key material, channel state, and snapshot artifacts were removed after proof.
 
 - Block hosted/production relay membership and authorization.
 - Buzz Desktop UI; this proof covers the real CLI path.
-- A GitHub release and anonymous marketplace install until the human public
-  visibility checkpoint and `v0.1.0` release steps are complete.
+- Hosting or operating a relay for users.
+- Any requirement that core camp, fest, or Festival users install this plugin.
 
-## Remaining release checkpoints
+## Public distribution result
 
-1. Review the full-history secret scan and public surface.
-2. Obtain explicit human approval and change the repository from private to
-   public.
-3. Enable and verify CodeQL default setup, secret scanning, push protection,
-   dependency alerts, and private vulnerability reporting.
-4. Push the reviewed branch and require green hosted CI on `origin/main`.
-5. From clean, synchronized `origin/main`, have the human operator create and
-   push `v0.1.0`.
-6. Verify the GitHub release and prove a credential-free scratch-home
-   `festival install camp-buzz`.
+The repository is public, the protected `main` and release workflows passed,
+and `v0.1.2` provides the expected four archives plus checksums. A fresh
+credential-free Linux/arm64 container installed the plugin from the official
+marketplace through Festival `v0.3.2` / festival-installer `v0.1.1`. The
+receipt owned the managed binary and both templates under
+`~/.obey/plugins/camp-buzz/`; `camp buzz version`, `doctor`, `post`, and
+`fest hooks list` all passed using only those installed locations.
 
 Do not claim hosted-relay support until an authorized operator runs a separate
 membership-gated smoke and records sanitized evidence.
