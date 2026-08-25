@@ -2,6 +2,11 @@
 
 Optional **Buzz** integration plugin for [camp](https://github.com/Obedience-Corp/camp).
 
+> [!IMPORTANT]
+> This is an independent Obedience Corp project. It is not affiliated with,
+> endorsed by, or supported by Block, Inc. Buzz names and trademarks belong to
+> their respective owners.
+
 This is **not** native Buzz support in camp or fest. It is a standalone
 `camp-*` plugin binary. When installed on your `PATH`, camp discovers it as:
 
@@ -197,3 +202,7 @@ changes.
 ## License
 
 Apache License 2.0. See [LICENSE](./LICENSE).
+
+Security reports and support expectations are documented in
+[SECURITY.md](./SECURITY.md) and [SUPPORT.md](./SUPPORT.md). Contributions are
+welcome under [CONTRIBUTING.md](./CONTRIBUTING.md).

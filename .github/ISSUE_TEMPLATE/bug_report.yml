@@ -1,0 +1,28 @@
+name: Bug report
+description: Report a reproducible camp-buzz defect
+title: "bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Do not include private keys, credentials, or private Buzz data.
+  - type: input
+    id: version
+    attributes:
+      label: camp-buzz version
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction
+      description: Provide minimal commands, expected behavior, and actual behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, architecture, Camp version, and Buzz CLI revision.
+    validations:
+      required: true
