@@ -101,6 +101,12 @@ func TestValidateExplicitTag(t *testing.T) {
 	}
 }
 
+func TestValidateLevelRejectsUnknownLevel(t *testing.T) {
+	if _, err := validateLevel("prerelease"); err == nil {
+		t.Fatal("expected unknown release level to fail")
+	}
+}
+
 func TestEnsureReleasesEnabled(t *testing.T) {
 	if err := ensureReleasesEnabled(); err != nil {
 		t.Fatalf("expected releases to be enabled: %v", err)
