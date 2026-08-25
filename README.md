@@ -2,7 +2,8 @@
 
 [![Test](https://github.com/Obedience-Corp/camp-buzz/actions/workflows/test.yaml/badge.svg)](https://github.com/Obedience-Corp/camp-buzz/actions/workflows/test.yaml)
 
-Optional **Buzz** integration plugin for [camp](https://github.com/Obedience-Corp/camp).
+Optional **Buzz status-projection** plugin for
+[camp](https://github.com/Obedience-Corp/camp).
 
 > [!IMPORTANT]
 > This is an independent Obedience Corp project. It is not affiliated with,
@@ -15,6 +16,10 @@ This is **not** native Buzz support in camp or fest. It is a standalone
 ```bash
 camp buzz …
 ```
+
+The supported product claim is status projection through an operator-provided
+Buzz CLI and relay. This project does not provide or claim a hosted Block relay,
+and installing it is never required to use camp, fest, or Festival.
 
 **Design:** campaign workitem WI-ca719b  
 `workflow/design/festival-buzz-integration` (Obey campaign).
@@ -99,11 +104,18 @@ Re-record with `just vhs` (needs `vhs`, `ttyd`, `ffmpeg`).
 
 ### Festival installer (preferred)
 
-Once a stable release exists and the official marketplace lists this plugin:
+The stable plugin is public in the official Obedience Corp marketplace. Use
+Festival `v0.3.2` or newer so the installer deploys both the executable and its
+managed runtime assets:
 
 ```bash
 festival install camp-buzz
+camp buzz version
+camp buzz doctor
 ```
+
+The executable is installed in Festival's managed `bin` directory. Templates
+are installed under `~/.obey/plugins/camp-buzz/`.
 
 ### From source
 
@@ -125,10 +137,13 @@ just install-assets   # → ~/.obey/plugins/camp-buzz/
 just release gate       # complete containerized release-readiness gate
 just release check      # validate goreleaser config
 just release snapshot   # local snapshot build
-just release package-check v0.1.0 # build and validate assets without publishing
+just release package-check <next-version> # validate assets without publishing
 just release stable     # tag next patch and push (triggers GH release)
-# or: just release tag v0.1.0
+# or: just release tag <new-version>
 ```
+
+Release tags are immutable. If a published tag already exists, fix forward
+under a new semantic version; never move or replace the existing tag.
 
 Both tag commands run `just release gate` after confirming a clean,
 synchronized `main` and before creating the tag. The tag workflow then proves
