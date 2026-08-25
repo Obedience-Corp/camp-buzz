@@ -1,3 +1,5 @@
+//go:build integration
+
 package main
 
 import (
@@ -71,6 +73,9 @@ func TestIntegrationFixtureFlow(t *testing.T) {
 	); err != nil {
 		t.Fatalf("bind: %v\n%s", err, out)
 	}
+	if out, err := run("bind", "--festival", "ITEST2"); err != nil {
+		t.Fatalf("merge existing bind: %v\n%s", err, out)
+	}
 
 	outStr, err := run("doctor")
 	if err != nil {
@@ -94,7 +99,7 @@ func TestIntegrationFixtureFlow(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := string(logBody)
-	for _, want := range []string{"integration test body", "festival: ITEST1", "task: FEST-itest", "gate: pass"} {
+	for _, want := range []string{"integration test body", "festival: ITEST2", "task: FEST-itest", "gate: pass"} {
 		if !strings.Contains(s, want) {
 			t.Fatalf("fake buzz log missing %q:\n%s", want, s)
 		}
