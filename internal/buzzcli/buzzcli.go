@@ -4,6 +4,7 @@ package buzzcli
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
@@ -13,6 +14,9 @@ import (
 // DefaultCommandTimeout bounds calls to the external Buzz CLI when the caller
 // has not supplied an earlier deadline.
 const DefaultCommandTimeout = 30 * time.Second
+
+// MaxContentBytes matches Buzz CLI's MAX_CONTENT_BYTES contract.
+const MaxContentBytes = 65_536
 
 type commandFactory func(context.Context, string, ...string) *exec.Cmd
 
@@ -45,8 +49,8 @@ func sendMessage(
 	lookPath func() (string, error),
 	newCommand commandFactory,
 ) error {
-	if channelID == "" {
-		return fmt.Errorf("channel id required")
+	if err := validateMessageRequest(channelID, body, relayURL); err != nil {
+		return err
 	}
 	if !HasPrivateKey() {
 		return fmt.Errorf("BUZZ_PRIVATE_KEY is not set")
@@ -71,6 +75,53 @@ func sendMessage(
 			return fmt.Errorf("buzz messages send for channel %q: %w (process: %v)", channelID, ctxErr, err)
 		}
 		return fmt.Errorf("buzz messages send for channel %q: %w", channelID, err)
+	}
+	return nil
+}
+
+func validateMessageRequest(channelID, body, relayURL string) error {
+	if !validUUID(channelID) {
+		return fmt.Errorf("channel id must be a UUID")
+	}
+	if strings.TrimSpace(body) == "" {
+		return fmt.Errorf("message body required")
+	}
+	if len(body) > MaxContentBytes {
+		return fmt.Errorf("message body exceeds Buzz limit (%d > %d bytes)", len(body), MaxContentBytes)
+	}
+	if relayURL != "" {
+		if err := validateRelayURL(relayURL); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validUUID(value string) bool {
+	if len(value) != 36 {
+		return false
+	}
+	for i, char := range []byte(value) {
+		if i == 8 || i == 13 || i == 18 || i == 23 {
+			if char != '-' {
+				return false
+			}
+			continue
+		}
+		if !((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f') || (char >= 'A' && char <= 'F')) {
+			return false
+		}
+	}
+	return true
+}
+
+func validateRelayURL(value string) error {
+	parsed, err := url.ParseRequestURI(value)
+	if err != nil || parsed.Host == "" || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+		return fmt.Errorf("relay URL must be an absolute HTTP or HTTPS URL")
+	}
+	if parsed.User != nil || parsed.Fragment != "" {
+		return fmt.Errorf("relay URL must not contain credentials or a fragment")
 	}
 	return nil
 }

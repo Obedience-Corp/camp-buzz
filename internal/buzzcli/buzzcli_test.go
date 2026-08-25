@@ -11,15 +11,17 @@ import (
 	"time"
 )
 
+const testChannel = "33333333-3333-4333-8333-333333333333"
+
 func TestSendMessageWithFakeBuzz(t *testing.T) {
 	t.Setenv("BUZZ_PRIVATE_KEY", "test-key")
 	factory := shellFactory(`cat >/dev/null; echo '{"ok":true}'`)
 
 	err := sendMessage(
 		context.Background(),
-		"chan-1",
+		testChannel,
 		"hello\n\n---\nfestival: X\ntask: -\npath: -\ngate: n/a\n---\n",
-		"ws://localhost:3000",
+		"http://localhost:3000",
 		time.Second,
 		fakeLookPath,
 		factory,
@@ -31,7 +33,7 @@ func TestSendMessageWithFakeBuzz(t *testing.T) {
 
 func TestSendMessageRequiresKey(t *testing.T) {
 	t.Setenv("BUZZ_PRIVATE_KEY", "")
-	err := SendMessage(context.Background(), "c", "body", "")
+	err := SendMessage(context.Background(), testChannel, "body", "")
 	if err == nil {
 		t.Fatal("expected error without key")
 	}
@@ -43,7 +45,7 @@ func TestSendMessageHonorsEarlierCallerDeadline(t *testing.T) {
 	defer cancel()
 	started := time.Now()
 
-	err := sendMessage(ctx, "chan-1", "body", "", time.Second, fakeLookPath, shellFactory("while :; do :; done"))
+	err := sendMessage(ctx, testChannel, "body", "", time.Second, fakeLookPath, shellFactory("while :; do :; done"))
 
 	assertPromptContextError(t, err, context.DeadlineExceeded, started)
 }
@@ -58,7 +60,7 @@ func TestSendMessageHonorsCancellation(t *testing.T) {
 	}()
 	started := time.Now()
 
-	err := sendMessage(ctx, "chan-1", "body", "", time.Second, fakeLookPath, shellFactory("while :; do :; done"))
+	err := sendMessage(ctx, testChannel, "body", "", time.Second, fakeLookPath, shellFactory("while :; do :; done"))
 
 	assertPromptContextError(t, err, context.Canceled, started)
 }
@@ -74,7 +76,7 @@ func TestSendMessageReapsTimedOutProcessesWithoutGoroutineGrowth(t *testing.T) {
 	}
 
 	for range 10 {
-		err := sendMessage(context.Background(), "chan-1", "body", "", 10*time.Millisecond, fakeLookPath, factory)
+		err := sendMessage(context.Background(), testChannel, "body", "", 10*time.Millisecond, fakeLookPath, factory)
 		if !errors.Is(err, context.DeadlineExceeded) {
 			t.Fatalf("expected deadline error, got %v", err)
 		}
@@ -102,9 +104,65 @@ func TestSendMessageWrapsSpawnAndExitFailures(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := sendMessage(context.Background(), "chan-1", "body", "", time.Second, fakeLookPath, tt.factory)
-			if err == nil || !strings.Contains(err.Error(), "buzz messages send for channel \"chan-1\"") || !strings.Contains(err.Error(), tt.want) {
+			err := sendMessage(context.Background(), testChannel, "body", "", time.Second, fakeLookPath, tt.factory)
+			if err == nil || !strings.Contains(err.Error(), "buzz messages send for channel \""+testChannel+"\"") || !strings.Contains(err.Error(), tt.want) {
 				t.Fatalf("error = %v", err)
+			}
+		})
+	}
+}
+
+func TestSendMessageContentBoundary(t *testing.T) {
+	t.Setenv("BUZZ_PRIVATE_KEY", "test-key")
+	spawned := 0
+	factory := func(ctx context.Context, _ string, _ ...string) *exec.Cmd {
+		spawned++
+		return exec.CommandContext(ctx, "sh", "-c", "cat >/dev/null")
+	}
+
+	err := sendMessage(context.Background(), testChannel, strings.Repeat("x", MaxContentBytes), "", time.Second, fakeLookPath, factory)
+	if err != nil {
+		t.Fatalf("at-limit message: %v", err)
+	}
+	if spawned != 1 {
+		t.Fatalf("at-limit spawn count = %d", spawned)
+	}
+
+	err = sendMessage(context.Background(), testChannel, strings.Repeat("x", MaxContentBytes+1), "", time.Second, fakeLookPath, factory)
+	if err == nil || !strings.Contains(err.Error(), "exceeds Buzz limit") {
+		t.Fatalf("over-limit error = %v", err)
+	}
+	if spawned != 1 {
+		t.Fatalf("over-limit input spawned Buzz; count = %d", spawned)
+	}
+}
+
+func TestSendMessageRejectsMalformedRequestBeforeSpawn(t *testing.T) {
+	t.Setenv("BUZZ_PRIVATE_KEY", "test-key")
+	tests := []struct {
+		name    string
+		channel string
+		body    string
+		relay   string
+	}{
+		{name: "channel", channel: "not-a-uuid", body: "body"},
+		{name: "empty body", channel: testChannel, body: " \n\t"},
+		{name: "relay scheme", channel: testChannel, body: "body", relay: "file:///tmp/relay"},
+		{name: "relay credentials", channel: testChannel, body: "body", relay: "https://user:pass@example.com"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			spawned := false
+			factory := func(ctx context.Context, _ string, _ ...string) *exec.Cmd {
+				spawned = true
+				return exec.CommandContext(ctx, "sh", "-c", "exit 0")
+			}
+			err := sendMessage(context.Background(), tt.channel, tt.body, tt.relay, time.Second, fakeLookPath, factory)
+			if err == nil {
+				t.Fatal("expected validation error")
+			}
+			if spawned {
+				t.Fatal("invalid request spawned Buzz")
 			}
 		})
 	}
@@ -132,7 +190,7 @@ func assertPromptContextError(t *testing.T, err error, target error, started tim
 	if elapsed := time.Since(started); elapsed > time.Second {
 		t.Fatalf("cancellation took %s", elapsed)
 	}
-	if !strings.Contains(err.Error(), "buzz messages send for channel \"chan-1\"") {
+	if !strings.Contains(err.Error(), "buzz messages send for channel \""+testChannel+"\"") {
 		t.Fatalf("missing command context: %v", err)
 	}
 }
