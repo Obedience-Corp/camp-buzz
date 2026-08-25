@@ -10,8 +10,6 @@ import (
 	"strings"
 )
 
-const goreleaserCmd = "github.com/goreleaser/goreleaser/v2@v2.15.2"
-
 var stableTagPattern = regexp.MustCompile(`^v(\d+)\.(\d+)\.(\d+)$`)
 
 type stableVersion struct {
@@ -62,7 +60,7 @@ func runStable(level string) error {
 	if err := ensureSyncedWithOriginMain(); err != nil {
 		return err
 	}
-	if err := runGoReleaserCheck(); err != nil {
+	if err := runReleaseGate(); err != nil {
 		return err
 	}
 
@@ -98,7 +96,7 @@ func runTag(version string) error {
 	if err := ensureSyncedWithOriginMain(); err != nil {
 		return err
 	}
-	if err := runGoReleaserCheck(); err != nil {
+	if err := runReleaseGate(); err != nil {
 		return err
 	}
 
@@ -277,12 +275,12 @@ func ensureSyncedWithOriginMain() error {
 	return nil
 }
 
-func runGoReleaserCheck() error {
-	cmd := exec.Command("go", "run", goreleaserCmd, "check")
+func runReleaseGate() error {
+	cmd := exec.Command("just", "release", "gate")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("goreleaser check failed: %w", err)
+		return fmt.Errorf("release gate failed: %w", err)
 	}
 	return nil
 }

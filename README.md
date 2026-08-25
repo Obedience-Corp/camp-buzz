@@ -115,11 +115,15 @@ just install-assets   # → ~/.obey/plugins/camp-buzz/
 ### Release cut (maintainers)
 
 ```bash
+just release gate       # complete containerized release-readiness gate
 just release check      # validate goreleaser config
 just release snapshot   # local snapshot build
 just release stable     # tag next patch and push (triggers GH release)
 # or: just release tag v0.1.0
 ```
+
+Both tag commands run `just release gate` after confirming a clean,
+synchronized `main` and before creating the tag.
 
 Marketplace registration lives in
 [`Obedience-Corp/marketplace`](https://github.com/Obedience-Corp/marketplace)
@@ -169,7 +173,9 @@ Hooks must **fail open** — do not block fest advance on post failures.
 
 ```bash
 just build
-just test          # unit + integration (fake buzz fixture)
+just test unit     # pure, host-safe unit suite
+just test all      # unit + containerized filesystem integration suite
+just release gate # full read-only-source release gate used by CI/tagging
 just smoke         # full CLI smoke with fixture
 just run doctor
 just vhs           # regenerate docs/demos/*.gif
@@ -177,6 +183,11 @@ just vhs           # regenerate docs/demos/*.gif
 
 Smoke and VHS use `scripts/vhs-fixture.sh` + `scripts/fake-buzz` so `post`
 is tested without a real Buzz deployment.
+
+`just release gate` mounts the checkout read-only and runs formatting, vet,
+unit/race tests, the fake-Buzz integration flow, Staticcheck, govulncheck,
+working-tree and full-history Gitleaks scans, a binary build, and GoReleaser
+configuration validation in containers. It fails if the checkout changes.
 
 ## License
 
