@@ -11,6 +11,7 @@ import (
 )
 
 func newRootCmd() *cobra.Command {
+	build := version.Current()
 	cmd := &cobra.Command{
 		Use:   "camp-buzz",
 		Short: "Optional Buzz integration plugin for camp",
@@ -33,12 +34,12 @@ See: workflow/design/festival-buzz-integration (campaign design WI-ca719b).`,
 		},
 	}
 
-	cmd.Version = version.Version
-	cmd.SetVersionTemplate(fmt.Sprintf("camp-buzz %s (%s) built %s\n", version.Version, version.Commit, version.BuildDate))
+	cmd.Version = build.Version
+	cmd.SetVersionTemplate(fmt.Sprintf("camp-buzz %s (%s) built %s\n", build.Version, build.Commit, build.BuildDate))
 	cmd.InitDefaultVersionFlag()
 	cmd.InitDefaultCompletionCmd()
 
-	cmd.AddCommand(newVersionCmd())
+	cmd.AddCommand(newVersionCmd(build))
 	cmd.AddCommand(newDoctorCmd())
 	cmd.AddCommand(newShowCmd())
 	cmd.AddCommand(newBindCmd())
@@ -48,12 +49,12 @@ See: workflow/design/festival-buzz-integration (campaign design WI-ca719b).`,
 	return cmd
 }
 
-func newVersionCmd() *cobra.Command {
+func newVersionCmd(build version.Build) *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
 		Short: "Print version information",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Fprintf(cmd.OutOrStdout(), "camp-buzz %s (%s) built %s\n", version.Version, version.Commit, version.BuildDate)
+			fmt.Fprintf(cmd.OutOrStdout(), "camp-buzz %s (%s) built %s\n", build.Version, build.Commit, build.BuildDate)
 		},
 	}
 }
