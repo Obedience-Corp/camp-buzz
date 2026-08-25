@@ -4,9 +4,10 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 git_dir="$(git -C "$repo_root" rev-parse --absolute-git-dir)"
-go_image="${CAMP_BUZZ_GO_IMAGE:-golang@sha256:298734aec230b5f3e8cee450ce6d7eccc39f1797ba548ee90d57e9803030c6c3}" # 1.25.9-bookworm
+go_image="${CAMP_BUZZ_GO_IMAGE:-golang@sha256:47ce5636e9936b2c5cbf708925578ef386b4f8872aec74a67bd13a627d242b19}" # 1.26.2-bookworm
 gitleaks_image="${CAMP_BUZZ_GITLEAKS_IMAGE:-zricethezav/gitleaks@sha256:cdbb7c955abce02001a9f6c9f602fb195b7fadc1e812065883f695d1eeaba854}" # v8.28.0
 goreleaser_image="${CAMP_BUZZ_GORELEASER_IMAGE:-goreleaser/goreleaser@sha256:5be644c8c779677d069b7f50d5e655274c65b5e188c41268abd5b3713c416527}" # v2.15.2
+goreleaser_version="${CAMP_BUZZ_GORELEASER_VERSION:-v2.15.2}"
 staticcheck_version="${CAMP_BUZZ_STATICCHECK_VERSION:-v0.6.1}"
 govulncheck_version="${CAMP_BUZZ_GOVULNCHECK_VERSION:-v1.1.4}"
 actionlint_version="${CAMP_BUZZ_ACTIONLINT_VERSION:-v1.7.12}"
@@ -19,6 +20,7 @@ run_go_gate() {
     -e "STATICCHECK_VERSION=${staticcheck_version}" \
     -e "GOVULNCHECK_VERSION=${govulncheck_version}" \
     -e "ACTIONLINT_VERSION=${actionlint_version}" \
+    -e "GORELEASER_VERSION=${goreleaser_version}" \
     "$go_image" bash -c '
       set -euo pipefail
       cp -a /src/. /work/
@@ -37,6 +39,7 @@ run_go_gate() {
       "$tool_bin/staticcheck" -tags=integration ./...
       go install "golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION}"
       "$tool_bin/govulncheck" ./...
+      go run "github.com/goreleaser/goreleaser/v2@${GORELEASER_VERSION}" --version >/dev/null
     '
 }
 
