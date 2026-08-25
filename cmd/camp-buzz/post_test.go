@@ -65,3 +65,15 @@ func TestValidateFooterRejectsMalformedFields(t *testing.T) {
 		})
 	}
 }
+
+func TestShowDisplaySanitizesInvalidValues(t *testing.T) {
+	if got := safeDisplay("FE1\n\x1b[31m", "fallback"); got != `FE1\n\x1b[31m` {
+		t.Fatalf("safeDisplay = %q", got)
+	}
+	if got := displayRelay("https://user:secret@example.com"); strings.Contains(got, "secret") || !strings.Contains(got, "invalid") {
+		t.Fatalf("displayRelay = %q", got)
+	}
+	if got := displayChannel("not-a-uuid"); !strings.Contains(got, "invalid") {
+		t.Fatalf("displayChannel = %q", got)
+	}
+}

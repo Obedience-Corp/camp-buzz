@@ -49,11 +49,23 @@ func TestCommandFailuresAreActionable(t *testing.T) {
 	out, err := fixture.run([]string{"CAMP_ROOT=" + unbound}, "bind", "--festival", "FE1")
 	assertFailure(t, out, err, "--channel is required")
 	mustRun(t, fixture, nil, "bind", "--channel", integrationChannel, "--relay", "http://localhost:3000")
+	out, err = fixture.run(nil, "bind", "--channel", "not-a-uuid")
+	assertFailure(t, out, err, "channel id must be a UUID")
+	out, err = fixture.run(nil, "bind", "--relay", "file:///tmp/relay")
+	assertFailure(t, out, err, "absolute HTTP or HTTPS URL")
+	out, err = fixture.run(nil, "bind", "--festival-path", "../outside")
+	assertFailure(t, out, err, "campaign-relative")
 	out, err = fixture.run([]string{"BUZZ_PRIVATE_KEY="}, "doctor")
 	assertFailure(t, out, err, "BUZZ_PRIVATE_KEY: NOT set", "status: not ready")
 	out, err = fixture.run([]string{"BUZZ_PRIVATE_KEY="}, "post", "-m", "body")
 	assertFailure(t, out, err, "BUZZ_PRIVATE_KEY is not set")
 	badConfig := filepath.Join(fixture.root, "campaign", ".campaign", "integrations", "buzz.yaml")
+	invalid := "relay_url: file:///tmp/relay\nchannel_id: not-a-uuid\nfestival_path: ../outside\n"
+	if err := os.WriteFile(badConfig, []byte(invalid), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, err = fixture.run(nil, "doctor")
+	assertFailure(t, out, err, "relay_url: INVALID", "channel_id: INVALID", "footer config: INVALID", "status: not ready")
 	if err := os.WriteFile(badConfig, []byte("channel_id: [invalid"), 0o644); err != nil {
 		t.Fatal(err)
 	}

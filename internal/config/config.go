@@ -29,15 +29,18 @@ func LoadFile(campaignRoot string) (Config, string, error) {
 		return cfg, "", nil
 	}
 	path := filepath.Join(campaignRoot, FileName)
+	if err := ensureSafeConfigPath(campaignRoot); err != nil {
+		return Config{}, path, err
+	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return cfg, path, nil
 		}
-		return Config{}, path, fmt.Errorf("read %s: %w", path, err)
+		return Config{}, path, fmt.Errorf("read %q: %w", path, err)
 	}
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return Config{}, path, fmt.Errorf("parse %s: %w", path, err)
+		return Config{}, path, fmt.Errorf("parse %q: %w", path, err)
 	}
 	return cfg, path, nil
 }
@@ -96,7 +99,7 @@ func Write(campaignRoot string, cfg Config) (string, error) {
 	}
 	header := []byte("# Non-secret Buzz bind for camp-buzz. Never put private keys here.\n")
 	if err := writeFileAtomically(path, append(header, data...), os.Rename); err != nil {
-		return "", fmt.Errorf("write %s: %w", path, err)
+		return "", fmt.Errorf("write %q: %w", path, err)
 	}
 	return path, nil
 }
@@ -135,7 +138,10 @@ func writeFileAtomically(path string, data []byte, rename func(string, string) e
 	if err := rename(temporary, path); err != nil {
 		return fmt.Errorf("replace config atomically: %w", err)
 	}
-	return syncDirectory(filepath.Dir(path))
+	if err := syncDirectory(filepath.Dir(path)); err != nil {
+		return fmt.Errorf("config replaced, but directory durability could not be confirmed: %w", err)
+	}
+	return nil
 }
 
 func configFileMode(path string) (fs.FileMode, error) {

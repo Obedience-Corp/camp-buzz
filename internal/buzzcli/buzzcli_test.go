@@ -149,6 +149,7 @@ func TestSendMessageRejectsMalformedRequestBeforeSpawn(t *testing.T) {
 		{name: "empty body", channel: testChannel, body: " \n\t"},
 		{name: "relay scheme", channel: testChannel, body: "body", relay: "file:///tmp/relay"},
 		{name: "relay credentials", channel: testChannel, body: "body", relay: "https://user:pass@example.com"},
+		{name: "relay query", channel: testChannel, body: "body", relay: "https://relay.example?token=secret"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

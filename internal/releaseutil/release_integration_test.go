@@ -53,6 +53,17 @@ func TestReleaseGitPreconditions(t *testing.T) {
 	}
 }
 
+func TestEnsureTagAbsentRejectsRemoteTag(t *testing.T) {
+	repo := newReleaseRepository(t)
+	t.Chdir(repo)
+	runGitTest(t, repo, "tag", "v0.1.0")
+	runGitTest(t, repo, "push", "origin", "v0.1.0")
+	runGitTest(t, repo, "tag", "-d", "v0.1.0")
+	if err := ensureTagAbsent("v0.1.0"); err == nil || !strings.Contains(err.Error(), "already exists on origin") {
+		t.Fatalf("remote tag error = %v", err)
+	}
+}
+
 func newReleaseRepository(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()

@@ -80,19 +80,30 @@ func sendMessage(
 }
 
 func validateMessageRequest(channelID, body, relayURL string) error {
-	if !validUUID(channelID) {
+	if err := ValidateChannelID(channelID); err != nil {
+		return err
+	}
+	if err := ValidateContent(body); err != nil {
+		return err
+	}
+	return ValidateRelayURL(relayURL)
+}
+
+// ValidateChannelID enforces the UUID form accepted by the Buzz CLI.
+func ValidateChannelID(value string) error {
+	if !validUUID(value) {
 		return fmt.Errorf("channel id must be a UUID")
 	}
-	if strings.TrimSpace(body) == "" {
+	return nil
+}
+
+// ValidateContent enforces Buzz's non-empty 65,536-byte message contract.
+func ValidateContent(value string) error {
+	if strings.TrimSpace(value) == "" {
 		return fmt.Errorf("message body required")
 	}
-	if len(body) > MaxContentBytes {
-		return fmt.Errorf("message body exceeds Buzz limit (%d > %d bytes)", len(body), MaxContentBytes)
-	}
-	if relayURL != "" {
-		if err := validateRelayURL(relayURL); err != nil {
-			return err
-		}
+	if len(value) > MaxContentBytes {
+		return fmt.Errorf("message body exceeds Buzz limit (%d > %d bytes)", len(value), MaxContentBytes)
 	}
 	return nil
 }
@@ -115,13 +126,18 @@ func validUUID(value string) bool {
 	return true
 }
 
-func validateRelayURL(value string) error {
+// ValidateRelayURL accepts an empty value for Buzz's default relay; explicit
+// values must be absolute HTTP(S) base URLs without credentials, queries, or fragments.
+func ValidateRelayURL(value string) error {
+	if value == "" {
+		return nil
+	}
 	parsed, err := url.ParseRequestURI(value)
 	if err != nil || parsed.Host == "" || (parsed.Scheme != "http" && parsed.Scheme != "https") {
 		return fmt.Errorf("relay URL must be an absolute HTTP or HTTPS URL")
 	}
-	if parsed.User != nil || parsed.Fragment != "" {
-		return fmt.Errorf("relay URL must not contain credentials or a fragment")
+	if parsed.User != nil || parsed.Fragment != "" || parsed.RawQuery != "" || parsed.ForceQuery {
+		return fmt.Errorf("relay URL must not contain credentials, a query, or a fragment")
 	}
 	return nil
 }

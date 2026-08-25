@@ -24,7 +24,7 @@ func newHookInstallCmd() *cobra.Command {
 				data, err := os.ReadFile(p)
 				if err == nil {
 					fmt.Fprint(cmd.OutOrStdout(), string(data))
-					fmt.Fprintf(cmd.ErrOrStderr(), "# source: %s\n", p)
+					fmt.Fprintf(cmd.ErrOrStderr(), "# source: %s\n", safeDisplay(p, "unknown"))
 					return nil
 				}
 			}

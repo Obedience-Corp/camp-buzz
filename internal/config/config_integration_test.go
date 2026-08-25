@@ -84,6 +84,9 @@ func TestWriteRefusesSymlinkedTarget(t *testing.T) {
 		t.Fatalf("error = %v", err)
 	}
 	assertFileContent(t, outside, "outside-original")
+	if _, _, err := LoadFile(root); err == nil || !strings.Contains(err.Error(), "symlinked") {
+		t.Fatalf("LoadFile error = %v", err)
+	}
 }
 
 func TestWriteRefusesSymlinkedParent(t *testing.T) {
@@ -101,6 +104,9 @@ func TestWriteRefusesSymlinkedParent(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(outside, "buzz.yaml")); !os.IsNotExist(err) {
 		t.Fatalf("outside target was created: %v", err)
+	}
+	if _, _, err := LoadFile(root); err == nil || !strings.Contains(err.Error(), "symlinked") {
+		t.Fatalf("LoadFile error = %v", err)
 	}
 }
 
