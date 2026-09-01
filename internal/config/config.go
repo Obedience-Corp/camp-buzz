@@ -1,4 +1,4 @@
-// Package config resolves non-secret Buzz integration settings for a campaign.
+// Package config resolves non-secret Buzz integration settings for a camp.
 package config
 
 import (
@@ -11,7 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// FileName is the campaign-relative bind file (no secrets).
+// FileName is the camp-relative bind file path (no secrets).
 const FileName = ".campaign/integrations/buzz.yaml"
 
 // Config is the non-secret bind configuration.
@@ -79,7 +79,7 @@ func NormalizeRelayURL(u string) string {
 // Write upserts the bind file under campaignRoot.
 func Write(campaignRoot string, cfg Config) (string, error) {
 	if campaignRoot == "" {
-		return "", fmt.Errorf("campaign root required")
+		return "", fmt.Errorf("camp root required")
 	}
 	cfg.RelayURL = NormalizeRelayURL(cfg.RelayURL)
 	path := filepath.Join(campaignRoot, FileName)

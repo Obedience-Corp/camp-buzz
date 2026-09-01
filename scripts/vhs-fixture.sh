@@ -22,7 +22,7 @@ chmod +x "$root/bin/buzz" "$root/bin/camp-buzz"
 mkdir -p "$root/home/.obey/plugins/camp-buzz"
 cp -R "$repo_root/assets/." "$root/home/.obey/plugins/camp-buzz/"
 
-# minimal campaign (camp init if available, else hand-roll .campaign)
+# minimal camp (camp init if available, else hand-roll .campaign)
 if command -v camp >/dev/null 2>&1; then
   camp init "$root/campaign" \
     --name camp-buzz-demo \

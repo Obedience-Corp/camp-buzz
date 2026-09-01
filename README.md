@@ -5,6 +5,9 @@
 Optional **Buzz status-projection** plugin for
 [camp](https://github.com/Obedience-Corp/camp).
 
+A camp, previously called a campaign, is one workspace holding related
+projects and the festivals you run in them.
+
 > [!IMPORTANT]
 > This is an independent Obedience Corp project. It is not affiliated with,
 > endorsed by, or supported by Block, Inc. Buzz names and trademarks belong to
@@ -21,8 +24,8 @@ The supported product claim is status projection through an operator-provided
 Buzz CLI and relay. This project does not provide or claim a hosted Block relay,
 and installing it is never required to use camp, fest, or Festival.
 
-**Design:** campaign workitem WI-ca719b  
-`workflow/design/festival-buzz-integration` (Obey campaign).
+**Design:** camp workitem WI-ca719b  
+`workflow/design/festival-buzz-integration` (Obey camp).
 
 ## What it does
 
@@ -190,7 +193,7 @@ message back with `buzz messages get`.
 
 ```bash
 camp buzz hook-install
-# merge into campaign/festival fest hooks config; map events with fest hooks list
+# merge into your camp's festival fest hooks config; map events with fest hooks list
 ```
 
 Hooks must **fail open** — do not block fest advance on post failures.

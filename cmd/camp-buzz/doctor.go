@@ -52,9 +52,9 @@ func doctorInstallation(out io.Writer) (string, bool) {
 	}
 	root := campaignRoot()
 	if root == "" {
-		fmt.Fprintln(out, "campaign root: not found (set CAMP_ROOT or run inside a campaign)")
+		fmt.Fprintln(out, "camp root: not found (set CAMP_ROOT or run inside a camp)")
 	} else {
-		fmt.Fprintf(out, "campaign root: %s\n", safeDisplay(root, "unknown"))
+		fmt.Fprintf(out, "camp root: %s\n", safeDisplay(root, "unknown"))
 	}
 	assetRoot, reason := assets.Root()
 	fmt.Fprintf(out, "asset root: %s (%s)\n", safeDisplay(assetRoot, "unknown"), safeDisplay(reason, "unknown"))
@@ -90,7 +90,7 @@ func doctorConfig(out io.Writer, root string) bool {
 
 func reportBindFile(out io.Writer, path string) {
 	if path == "" {
-		fmt.Fprintln(out, "bind file: n/a (no campaign root)")
+		fmt.Fprintln(out, "bind file: n/a (no camp root)")
 		return
 	}
 	if _, err := os.Stat(path); err == nil {

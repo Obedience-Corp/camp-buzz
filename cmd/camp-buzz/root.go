@@ -24,7 +24,7 @@ Install on PATH so camp discovers it as:
 Posts Festival status into a Buzz channel via the external buzz CLI.
 No Buzz logic is compiled into camp or fest.
 
-See: workflow/design/festival-buzz-integration (campaign design WI-ca719b).`,
+See: workflow/design/festival-buzz-integration (camp design WI-ca719b).`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
