@@ -13,12 +13,12 @@ func newBindCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "bind",
-		Short: "Write non-secret Buzz bind config for this campaign",
-		Long:  "Upserts .campaign/integrations/buzz.yaml. Never writes private keys.",
+		Short: "Write non-secret Buzz bind config for this camp",
+		Long:  "Upserts the camp metadata path .campaign/integrations/buzz.yaml. Never writes private keys.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			root := campaignRoot()
 			if root == "" {
-				return fmt.Errorf("not inside a campaign (no .campaign / CAMP_ROOT)")
+				return fmt.Errorf("not inside a camp (set CAMP_ROOT or run from a directory containing .campaign/)")
 			}
 			// Merge with existing file only (do not bake env into the file).
 			cfg, _, err := config.LoadFile(root)
@@ -61,7 +61,7 @@ func addBindFlags(cmd *cobra.Command, relay, channel, festivalID, festivalPath *
 	cmd.Flags().StringVar(relay, "relay", "", "Buzz relay HTTP base URL (e.g. http://localhost:3000)")
 	cmd.Flags().StringVar(channel, "channel", "", "Buzz channel UUID")
 	cmd.Flags().StringVar(festivalID, "festival", "", "Default festival id for footers")
-	cmd.Flags().StringVar(festivalPath, "festival-path", "", "Optional festival path relative to campaign")
+	cmd.Flags().StringVar(festivalPath, "festival-path", "", "Optional festival path relative to the camp root")
 }
 
 func validateBindConfig(cfg config.Config) error {

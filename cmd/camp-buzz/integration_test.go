@@ -54,7 +54,7 @@ func TestCommandFailuresAreActionable(t *testing.T) {
 	out, err = fixture.run(nil, "bind", "--relay", "file:///tmp/relay")
 	assertFailure(t, out, err, "absolute HTTP or HTTPS URL")
 	out, err = fixture.run(nil, "bind", "--festival-path", "../outside")
-	assertFailure(t, out, err, "campaign-relative")
+	assertFailure(t, out, err, "camp-relative")
 	out, err = fixture.run([]string{"BUZZ_PRIVATE_KEY="}, "doctor")
 	assertFailure(t, out, err, "BUZZ_PRIVATE_KEY: NOT set", "status: not ready")
 	out, err = fixture.run([]string{"BUZZ_PRIVATE_KEY="}, "post", "-m", "body")

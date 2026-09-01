@@ -138,7 +138,7 @@ func validateFooter(festival, task, path, gate string) error {
 		}
 	}
 	if path != "-" && (filepath.IsAbs(path) || filepath.Clean(path) == ".." || strings.HasPrefix(filepath.Clean(path), ".."+string(filepath.Separator))) {
-		return fmt.Errorf("path footer field must be campaign-relative")
+		return fmt.Errorf("path footer field must be camp-relative")
 	}
 	if gate != "pending" && gate != "pass" && gate != "fail" && gate != "n/a" {
 		return fmt.Errorf("gate must be pending, pass, fail, or n/a")
