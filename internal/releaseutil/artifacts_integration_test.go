@@ -72,6 +72,11 @@ func buildTargetBinary(t *testing.T, repoRoot, dir string, target releaseTarget)
 
 func writeTestArchive(t *testing.T, path string, binary []byte) {
 	t.Helper()
+	writeNamedTestArchive(t, path, binary, "camp-buzz")
+}
+
+func writeNamedTestArchive(t *testing.T, path string, binary []byte, binaryName string) {
+	t.Helper()
 	file, err := os.Create(path)
 	if err != nil {
 		t.Fatal(err)
@@ -82,6 +87,7 @@ func writeTestArchive(t *testing.T, path string, binary []byte) {
 		content := []byte("fixture")
 		mode := int64(0o644)
 		if name == "camp-buzz" {
+			name = binaryName
 			content = binary
 			mode = 0o755
 		}
@@ -101,5 +107,30 @@ func writeTestArchive(t *testing.T, path string, binary []byte) {
 	}
 	if err := file.Close(); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestWindowsCandidateArchiveRequiresPEBinary(t *testing.T) {
+	dir := t.TempDir()
+	root, err := filepath.Abs("../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	target := releaseTarget{OS: "windows", Arch: "x86_64"}
+	binary := buildTargetBinary(t, root, dir, target)
+	archive := filepath.Join(dir, "windows.tar.gz")
+	writeNamedTestArchive(t, archive, binary, "camp-buzz.exe")
+	if err := verifyArchive(archive, target); err != nil {
+		t.Fatalf("valid Windows payload: %v", err)
+	}
+	corrupt := append([]byte(nil), binary...)
+	corrupt[0] ^= 1
+	writeNamedTestArchive(t, archive, corrupt, "camp-buzz.exe")
+	if err := verifyArchive(archive, target); err == nil {
+		t.Fatal("corrupt PE passed")
+	}
+	writeNamedTestArchive(t, archive, binary, "camp-buzz")
+	if err := verifyArchive(archive, target); err == nil {
+		t.Fatal("Windows archive without exe name passed")
 	}
 }

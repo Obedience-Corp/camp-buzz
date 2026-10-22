@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"debug/elf"
 	"debug/macho"
+	"debug/pe"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -43,11 +44,21 @@ var requiredPackageFiles = []string{
 }
 
 func verifyArtifacts(dir, tag string) error {
+	return verifyArtifactsForTargets(dir, tag, releaseTargets)
+}
+
+func verifyWindowsCandidateArtifacts(dir, tag string) error {
+	targets := append([]releaseTarget(nil), releaseTargets...)
+	targets = append(targets, releaseTarget{OS: "windows", Arch: "x86_64"})
+	return verifyArtifactsForTargets(dir, tag, targets)
+}
+
+func verifyArtifactsForTargets(dir, tag string, targets []releaseTarget) error {
 	if err := validateExplicitTag(tag); err != nil {
 		return fmt.Errorf("artifact tag: %w", err)
 	}
 	version := strings.TrimPrefix(tag, "v")
-	expected := expectedArchiveNames(version)
+	expected := archiveNamesForTargets(version, targets)
 	checksums, err := readChecksums(filepath.Join(dir, "checksums.txt"))
 	if err != nil {
 		return err
@@ -69,8 +80,12 @@ func verifyArtifacts(dir, tag string) error {
 }
 
 func expectedArchiveNames(version string) map[releaseTarget]string {
-	names := make(map[releaseTarget]string, len(releaseTargets))
-	for _, target := range releaseTargets {
+	return archiveNamesForTargets(version, releaseTargets)
+}
+
+func archiveNamesForTargets(version string, targets []releaseTarget) map[releaseTarget]string {
+	names := make(map[releaseTarget]string, len(targets))
+	for _, target := range targets {
 		names[target] = fmt.Sprintf("camp-buzz-%s-%s-%s.tar.gz", version, target.OS, target.Arch)
 	}
 	return names
@@ -134,6 +149,9 @@ func verifyArchive(path string, target releaseTarget) error {
 		return err
 	}
 	for _, required := range requiredPackageFiles {
+		if target.OS == "windows" && required == "camp-buzz" {
+			required += ".exe"
+		}
 		if !files[required] {
 			return fmt.Errorf("missing packaged file %s", required)
 		}
@@ -166,7 +184,7 @@ func readArchive(reader *tar.Reader) (map[string]bool, []byte, error) {
 			return nil, nil, fmt.Errorf("archive contains duplicate file %s", name)
 		}
 		files[name] = true
-		if name == "camp-buzz" {
+		if name == "camp-buzz" || name == "camp-buzz.exe" {
 			if header.FileInfo().Mode().Perm()&0o111 == 0 {
 				return nil, nil, fmt.Errorf("packaged binary is not executable")
 			}
@@ -185,6 +203,17 @@ func readArchive(reader *tar.Reader) (map[string]bool, []byte, error) {
 func verifyBinaryTarget(binary []byte, target releaseTarget) error {
 	if len(binary) == 0 {
 		return fmt.Errorf("packaged binary is empty")
+	}
+	if target.OS == "windows" {
+		file, err := pe.NewFile(bytes.NewReader(binary))
+		if err != nil {
+			return fmt.Errorf("parse Windows binary: %w", err)
+		}
+		defer file.Close()
+		if target.Arch != "x86_64" || file.Machine != pe.IMAGE_FILE_MACHINE_AMD64 {
+			return fmt.Errorf("windows binary architecture is %#x, want amd64", file.Machine)
+		}
+		return nil
 	}
 	if target.OS == "linux" {
 		file, err := elf.NewFile(bytes.NewReader(binary))

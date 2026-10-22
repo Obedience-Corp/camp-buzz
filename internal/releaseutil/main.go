@@ -39,8 +39,12 @@ func run(args []string) error {
 		fs.SetOutput(os.Stderr)
 		dir := fs.String("dir", "dist", "GoReleaser distribution directory")
 		tag := fs.String("tag", "", "stable release tag")
+		windows := fs.Bool("windows-candidate", false, "verify additional unsigned Windows candidate, never publish")
 		if err := fs.Parse(args[1:]); err != nil {
 			return err
+		}
+		if *windows {
+			return verifyWindowsCandidateArtifacts(*dir, *tag)
 		}
 		return verifyArtifacts(*dir, *tag)
 	case "stable":

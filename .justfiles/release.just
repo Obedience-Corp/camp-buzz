@@ -40,3 +40,14 @@ stable level="patch":
 [no-cd]
 tag VERSION:
     {{releaseutil}} tag --version {{VERSION}}
+
+# Opt-in Windows candidates do not alter ordinary public tag releases.
+[no-cd]
+windows-candidate VERSION:
+    WINDOWS_CANDIDATE=true CANDIDATE_VERSION={{quote(VERSION)}} {{goreleaser}} release --snapshot --clean
+    {{releaseutil}} artifacts --dir dist --tag v{{quote(VERSION)}} --windows-candidate
+
+# Default and Windows-candidate matrix plus native extracted-binary proof in Docker.
+[no-cd]
+candidate-gate:
+    bash scripts/candidate-gate-container.sh

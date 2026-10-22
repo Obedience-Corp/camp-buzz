@@ -1,0 +1,82 @@
+name: Windows candidate
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Stable semantic version to stamp (candidate only)
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3
+        with:
+          just-version: 1.58.0
+      - name: Existing isolated release gate
+        run: just release gate
+      - name: Build and verify opt-in Windows candidates
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
+          just release windows-candidate "$VERSION"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: camp-buzz-candidates
+          path: |
+            dist/*.tar.gz
+            dist/checksums.txt
+  native:
+    needs: package
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+            arch: x86_64
+            binary: camp-buzz.exe
+          - os: macos-latest
+            platform: macOS
+            arch: arm64
+            binary: camp-buzz
+          - os: macos-15-intel
+            platform: macOS
+            arch: x86_64
+            binary: camp-buzz
+          - os: ubuntu-latest
+            platform: linux
+            arch: x86_64
+            binary: camp-buzz
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+      - uses: actions/download-artifact@v4
+        with:
+          name: camp-buzz-candidates
+      - name: Extract and execute exact candidate bytes
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+          TARGET_OS: ${{ matrix.platform }}
+          TARGET_ARCH: ${{ matrix.arch }}
+          BINARY: ${{ matrix.binary }}
+        run: |
+          set -euo pipefail
+          archive="camp-buzz-$VERSION-$TARGET_OS-$TARGET_ARCH.tar.gz"
+          go run ./internal/releaseutil artifacts --dir . --tag "v$VERSION" --windows-candidate
+          proof="$RUNNER_TEMP/camp-buzz-native"
+          mkdir -p "$proof"
+          tar -xzf "$archive" -C "$proof"
+          "$proof/$BINARY" version | grep -F "camp-buzz $VERSION"

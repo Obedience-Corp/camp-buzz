@@ -5,7 +5,8 @@ before:
     - bash scripts/completions.sh
 
 builds:
-  - id: camp-buzz-build
+  - &camp_buzz_build
+    id: camp-buzz-build
     main: ./cmd/camp-buzz
     binary: camp-buzz
     env:
@@ -22,10 +23,18 @@ builds:
       - -X github.com/Obedience-Corp/camp-buzz/internal/version.Commit={{.Commit}}
       - -X github.com/Obedience-Corp/camp-buzz/internal/version.BuildDate={{.Date}}
 
+  - <<: *camp_buzz_build
+    id: camp-buzz-windows-candidate
+    goos: [windows]
+    goarch: [amd64]
+    skip: '{{ not (and .IsSnapshot (eq (index .Env "WINDOWS_CANDIDATE") "true")) }}'
+
 archives:
   - id: camp-buzz
     ids:
       - camp-buzz-build
+      - camp-buzz-windows-candidate
+    formats: [tar.gz]
     name_template: >-
       camp-buzz-
       {{- .Version }}-
@@ -44,7 +53,7 @@ checksum:
   name_template: checksums.txt
 
 snapshot:
-  version_template: "{{ incpatch .Version }}-next"
+  version_template: '{{ if index .Env "CANDIDATE_VERSION" }}{{ index .Env "CANDIDATE_VERSION" }}{{ else }}{{ incpatch .Version }}-next{{ end }}'
 
 changelog:
   sort: asc
