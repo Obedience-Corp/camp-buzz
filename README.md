@@ -1,6 +1,8 @@
 # camp-buzz
 
 [![Test](https://github.com/Obedience-Corp/camp-buzz/actions/workflows/test.yaml/badge.svg)](https://github.com/Obedience-Corp/camp-buzz/actions/workflows/test.yaml)
+  <a href="https://github.com/Obedience-Corp/festival"><img src="https://img.shields.io/badge/built%20with-Festival-7c3aed.svg" alt="Built with Festival"></a>
+
 
 Optional **Buzz status-projection** plugin for
 [camp](https://github.com/Obedience-Corp/camp).
